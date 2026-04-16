@@ -1,0 +1,9 @@
+node_modules/
+dist/
+admin/dist/
+widget/dist/
+.env
+*.log
+.DS_Store
+coverage/
+.prisma/
