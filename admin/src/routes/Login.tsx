@@ -30,7 +30,7 @@ export default function Login() {
     try {
       const res = await login(data.login, data.password);
       setToken(res.token);
-      navigate('/admin');
+      navigate('/');
     } catch {
       setError('Неверные данные');
     }

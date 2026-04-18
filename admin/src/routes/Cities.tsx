@@ -32,7 +32,7 @@ export default function Cities() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Города</h2>
         <Button asChild>
-          <Link to="/admin/cities/new"><Plus className="mr-2 h-4 w-4" />Добавить город</Link>
+          <Link to="/cities/new"><Plus className="mr-2 h-4 w-4" />Добавить город</Link>
         </Button>
       </div>
 
@@ -84,7 +84,7 @@ function CityRow({ city, onToggle, onDelete }: { city: City; onToggle: (v: boole
       <td className="p-3 text-right">
         <div className="flex items-center justify-end gap-1">
           <Button variant="ghost" size="icon" asChild>
-            <Link to={`/admin/cities/${city.slug}/edit`}><Pencil className="h-4 w-4" /></Link>
+            <Link to={`/cities/${city.slug}/edit`}><Pencil className="h-4 w-4" /></Link>
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>

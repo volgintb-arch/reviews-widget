@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Copy, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
 
   const { data: city, isLoading } = useQuery({
     queryKey: ['city', slug],
@@ -77,7 +78,7 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
           toast({ title: 'Запущена первая выгрузка' });
         } catch { /* ignore */ }
       }
-      navigate('/admin/cities');
+      navigate('/cities');
     },
     onError: () => toast({ title: 'Ошибка сохранения', variant: 'destructive' }),
   });
@@ -89,7 +90,7 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/admin/cities"><ArrowLeft className="mr-2 h-4 w-4" />Назад к списку</Link>
+        <Link to="/cities"><ArrowLeft className="mr-2 h-4 w-4" />Назад к списку</Link>
       </Button>
 
       <Card>
@@ -147,13 +148,48 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Сохранить
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate('/admin/cities')}>
+              <Button type="button" variant="outline" onClick={() => navigate('/cities')}>
                 Отмена
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {mode === 'edit' && city && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Код для вставки в Tilda</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Вставьте этот код в блок <span className="font-mono">T123</span> (HTML-код) на странице города в Tilda.
+            </p>
+            <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
+              <code>{getSnippet(city.slug)}</code>
+            </pre>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(getSnippet(city.slug));
+                setCopied(true);
+                toast({ title: 'Скопировано' });
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copied ? 'Скопировано' : 'Копировать'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
+}
+
+function getSnippet(slug: string): string {
+  return `<div id="ql-reviews" data-city="${slug}"></div>
+<script src="https://reviews.questlegends.ru/widget/widget.js" defer></script>`;
 }
