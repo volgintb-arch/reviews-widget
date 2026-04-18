@@ -16,7 +16,7 @@ export async function reviewsRoute(app: FastifyInstance) {
     const result = await getPublicReviews({
       citySlug: city,
       source: source || undefined,
-      limit: limit ? parseInt(limit, 10) : 50,
+      limit: limit ? parseInt(limit, 10) : 200,
     });
 
     reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');

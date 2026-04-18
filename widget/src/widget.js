@@ -27,6 +27,7 @@
     data: null,
     activeSource: 'all',
     embla: null,
+    expanded: new Set(),
   };
 
   async function init() {
@@ -79,17 +80,17 @@
 
   function render() {
     const reviews = getFilteredReviews();
+    state.expanded = new Set();
     root.innerHTML = renderTabs() + renderSummary() + renderCarousel(reviews);
     bindHandlers();
     if (reviews.length > 0) {
       initEmbla();
-      detectTextOverflow();
     }
   }
 
   function getCardsVisible() {
     const w = window.innerWidth;
-    if (w < 768) return cardsMobileOverride || state.config?.cards_visible_mobile || 1;
+    if (w < 640) return cardsMobileOverride || state.config?.cards_visible_mobile || 1;
     if (w < 1024) return 2;
     return cardsDesktopOverride || state.config?.cards_visible_desktop || 3;
   }
@@ -116,7 +117,7 @@
 
   function renderTabs() {
     const stats = getStats();
-    const all = stats.average?.toFixed(1) || '0.0';
+    const all = stats.average ? stats.average.toFixed(1) : '0.0';
     const yandex = stats.by_source?.yandex;
     const twogis = stats.by_source?.['2gis'];
     const tabs = [
@@ -140,17 +141,7 @@
     }
     return `<div class="ql-tabs" role="tablist">${tabs
       .map(
-        (t) => `
-          <button
-            class="ql-tab${state.activeSource === t.key ? ' ql-tab--active' : ''}"
-            data-source="${t.key}"
-            role="tab"
-            aria-selected="${state.activeSource === t.key}"
-          >
-            <span class="ql-tab__icon">${t.icon}</span>
-            <span class="ql-tab__label">${escapeHtml(t.label)}</span>
-            <span class="ql-tab__rating">${t.rating}</span>
-          </button>`
+        (t) => `<button class="ql-tab${state.activeSource === t.key ? ' ql-tab--active' : ''}" data-source="${t.key}" role="tab" aria-selected="${state.activeSource === t.key}"><span class="ql-tab__icon">${t.icon}</span><span class="ql-tab__label">${escapeHtml(t.label)}</span><span class="ql-tab__rating">${t.rating}</span></button>`
       )
       .join('')}</div>`;
   }
@@ -159,102 +150,37 @@
     const { count, average } = getActiveStats();
     if (!count) return '';
     const avg = Number(average || 0);
-    return `
-      <div class="ql-summary">
-        <span class="ql-summary__big">${avg.toFixed(1)}</span>
-        <span class="ql-summary__of">из 5</span>
-        <div class="ql-stars" aria-label="Рейтинг ${avg.toFixed(1)} из 5">${renderStars(avg)}</div>
-        <span class="ql-summary__count">На основе ${count} ${pluralize(count, 'оценки', 'оценок', 'оценок')}</span>
-      </div>`;
+    return `<div class="ql-summary"><span class="ql-summary__rating">${avg.toFixed(1)}</span><span class="ql-summary__of">из 5</span><span class="ql-stars ql-stars--summary" aria-label="Рейтинг ${avg.toFixed(1)} из 5">${renderStars(avg)}</span><span class="ql-summary__count">На основе ${count} ${pluralize(count, 'оценки', 'оценок', 'оценок')}</span></div>`;
   }
 
   function renderCarousel(reviews) {
     if (!reviews.length) {
       return `<div class="ql-empty">Пока нет отзывов из этого источника</div>`;
     }
-    const slides = reviews.map(renderCard).join('');
-    return `
-      <div class="ql-carousel">
-        <div class="ql-carousel__viewport">
-          <div class="ql-carousel__container">${slides}</div>
-        </div>
-        <div class="ql-controls">
-          <button class="ql-arrow ql-arrow--prev" aria-label="Назад" disabled>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <div class="ql-progress"><div class="ql-progress__bar"></div></div>
-          <button class="ql-arrow ql-arrow--next" aria-label="Вперёд">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      </div>`;
+    const slides = reviews.map((r, i) => renderCard(r, i)).join('');
+    return `<div class="ql-carousel"><div class="ql-carousel__viewport"><div class="ql-carousel__container">${slides}</div></div><div class="ql-controls"><div class="ql-nav"><button class="ql-arrow ql-arrow--prev" aria-label="Назад" disabled><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><button class="ql-arrow ql-arrow--next" aria-label="Вперёд"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button></div><div class="ql-progress"><div class="ql-progress__bar"></div></div></div></div>`;
   }
 
-  function renderCard(r) {
+  function renderCard(r, idx) {
     const initial = (r.author || '?').trim().charAt(0).toUpperCase() || '?';
     const avatar = r.avatar
       ? `<img src="${escapeAttr(r.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ql-card__initial',textContent:'${escapeAttr(initial)}'}))">`
       : `<span class="ql-card__initial">${escapeHtml(initial)}</span>`;
-    const sourceLabel = r.source === '2gis' ? 'Отзыв 2ГИС' : 'Отзыв Яндекс';
-    return `
-      <div class="ql-slide">
-        <article class="ql-card">
-          <header class="ql-card__head">
-            <div class="ql-card__avatar">${avatar}</div>
-            <div class="ql-card__meta">
-              <div class="ql-card__author">${escapeHtml(r.author || 'Аноним')}</div>
-              <div class="ql-stars">${renderStars(r.rating)}</div>
-              <time class="ql-card__date" datetime="${escapeAttr(r.date)}">${formatDate(r.date)}</time>
-            </div>
-          </header>
-          <div class="ql-card__body">
-            <p class="ql-card__text">${escapeHtml(r.text || '')}</p>
-          </div>
-          <footer class="ql-card__foot">
-            ${r.review_url ? `<a href="${escapeAttr(r.review_url)}" target="_blank" rel="noopener nofollow" class="ql-card__link">${sourceLabel}</a>` : ''}
-          </footer>
-        </article>
-      </div>`;
+    const sourceLabel = r.source === '2gis' ? 'Отзыв 2ГИС' : 'Отзыв Яндекс Карты';
+    const expanded = state.expanded.has(idx);
+    const textClass = expanded ? 'ql-card__text ql-card__text--expanded' : 'ql-card__text';
+    return `<div class="ql-slide"><article class="ql-card"><header class="ql-card__head"><div class="ql-card__avatar">${avatar}</div><div class="ql-card__meta"><div class="ql-card__author">${escapeHtml(r.author || 'Аноним')}</div><div class="ql-stars">${renderStars(r.rating)}</div><time class="ql-card__date" datetime="${escapeAttr(r.date)}">${formatDate(r.date)}</time></div></header><div class="ql-card__body"><p class="${textClass}" data-idx="${idx}">${escapeHtml(r.text || '')}</p><button type="button" class="ql-card__more" data-idx="${idx}" hidden>${expanded ? 'Свернуть' : 'Читать полностью'}</button></div><footer class="ql-card__foot">${r.review_url ? `<a href="${escapeAttr(r.review_url)}" target="_blank" rel="noopener nofollow" class="ql-card__link">${sourceLabel}</a>` : ''}</footer></article></div>`;
   }
 
   function renderSkeleton() {
-    root.innerHTML = `
-      <div class="ql-tabs ql-tabs--skeleton">
-        <div class="ql-skeleton-pill"></div>
-        <div class="ql-skeleton-pill"></div>
-        <div class="ql-skeleton-pill"></div>
-      </div>
-      <div class="ql-summary ql-summary--skeleton">
-        <div class="ql-skeleton-line" style="width:160px;height:36px"></div>
-      </div>
-      <div class="ql-carousel">
-        <div class="ql-carousel__viewport">
-          <div class="ql-carousel__container">
-            ${Array.from({ length: 3 })
-              .map(
-                () => `
-              <div class="ql-slide">
-                <div class="ql-card ql-card--skeleton">
-                  <div class="ql-skeleton-line" style="width:60%;height:18px"></div>
-                  <div class="ql-skeleton-line" style="width:40%;height:14px;margin-top:8px"></div>
-                  <div class="ql-skeleton-line" style="width:100%;height:14px;margin-top:16px"></div>
-                  <div class="ql-skeleton-line" style="width:100%;height:14px;margin-top:6px"></div>
-                  <div class="ql-skeleton-line" style="width:70%;height:14px;margin-top:6px"></div>
-                </div>
-              </div>`
-              )
-              .join('')}
-          </div>
-        </div>
-      </div>`;
+    const cells = Array.from({ length: 3 })
+      .map(() => `<div class="ql-slide"><div class="ql-card ql-card--skeleton"><div class="ql-skeleton-line" style="width:60%;height:18px"></div><div class="ql-skeleton-line" style="width:40%;height:14px;margin-top:8px"></div><div class="ql-skeleton-line" style="width:100%;height:14px;margin-top:16px"></div><div class="ql-skeleton-line" style="width:100%;height:14px;margin-top:6px"></div><div class="ql-skeleton-line" style="width:70%;height:14px;margin-top:6px"></div></div></div>`)
+      .join('');
+    root.innerHTML = `<div class="ql-tabs ql-tabs--skeleton"><div class="ql-skeleton-pill"></div><div class="ql-skeleton-pill"></div><div class="ql-skeleton-pill"></div></div><div class="ql-summary ql-summary--skeleton"><div class="ql-skeleton-line" style="width:220px;height:22px"></div></div><div class="ql-carousel"><div class="ql-carousel__viewport"><div class="ql-carousel__container">${cells}</div></div></div>`;
   }
 
   function renderError() {
-    root.innerHTML = `
-      <div class="ql-error">
-        <p>Отзывы временно недоступны</p>
-        <button class="ql-retry">Попробовать снова</button>
-      </div>`;
+    root.innerHTML = `<div class="ql-error"><p>Отзывы временно недоступны</p><button class="ql-retry">Попробовать снова</button></div>`;
     root.querySelector('.ql-retry')?.addEventListener('click', () => {
       renderSkeleton();
       init();
@@ -268,6 +194,30 @@
         if (src === state.activeSource) return;
         state.activeSource = src;
         render();
+      });
+    });
+    root.querySelectorAll('.ql-card__more').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.idx);
+        if (state.expanded.has(idx)) state.expanded.delete(idx);
+        else state.expanded.add(idx);
+        const text = root.querySelector(`.ql-card__text[data-idx="${idx}"]`);
+        if (text) {
+          text.classList.toggle('ql-card__text--expanded');
+          btn.textContent = text.classList.contains('ql-card__text--expanded') ? 'Свернуть' : 'Читать полностью';
+        }
+        if (state.embla) setTimeout(() => state.embla.reInit(), 50);
+      });
+    });
+    // show "Читать полностью" only when text is truncated
+    requestAnimationFrame(() => {
+      root.querySelectorAll('.ql-card__text').forEach((el) => {
+        if (el.classList.contains('ql-card__text--expanded')) return;
+        if (el.scrollHeight > el.clientHeight + 1) {
+          const idx = el.dataset.idx;
+          const btn = root.querySelector(`.ql-card__more[data-idx="${idx}"]`);
+          if (btn) btn.hidden = false;
+        }
       });
     });
   }
@@ -315,23 +265,23 @@
     updateProgress();
   }
 
-  function detectTextOverflow() {
-    root.querySelectorAll('.ql-card').forEach((card) => {
-      const text = card.querySelector('.ql-card__text');
-      if (!text) return;
-      if (text.scrollHeight > text.clientHeight + 1) {
-        card.classList.add('ql-card--clamped');
-      }
-    });
-  }
-
   function renderStars(rating) {
-    const full = Math.round(Number(rating) || 0);
+    const r = Math.max(0, Math.min(5, Number(rating) || 0));
+    const full = Math.floor(r);
+    const hasHalf = r - full >= 0.25 && r - full < 0.75;
+    const rounded = r - full >= 0.75 ? full + 1 : full;
     let out = '';
     for (let i = 0; i < 5; i++) {
-      out += `<span class="ql-star ql-star--${i < full ? 'filled' : 'empty'}">★</span>`;
+      let cls = 'ql-star--empty';
+      if (i < (hasHalf ? full : rounded)) cls = 'ql-star--filled';
+      else if (hasHalf && i === full) cls = 'ql-star--half';
+      out += `<span class="ql-star ${cls}" aria-hidden="true">${cls === 'ql-star--half' ? halfStarSvg() : '★'}</span>`;
     }
     return out;
+  }
+
+  function halfStarSvg() {
+    return `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" aria-hidden="true"><defs><linearGradient id="qlHalf"><stop offset="50%" stop-color="var(--ql-star)"/><stop offset="50%" stop-color="var(--ql-star-empty)"/></linearGradient></defs><path fill="url(#qlHalf)" d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg>`;
   }
 
   const MONTHS = [
@@ -367,13 +317,13 @@
   }
 
   function iconAll() {
-    return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg>`;
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="#8B5CF6" aria-hidden="true"><path d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg>`;
   }
   function iconYandex() {
-    return `<span class="ql-src-badge ql-src-badge--yandex" aria-hidden="true">Я</span>`;
+    return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="10" r="8" fill="#FC3F1D"/><path d="M12 22l-4-6h8z" fill="#FC3F1D"/><text x="12" y="13.5" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Arial, sans-serif">Я</text></svg>`;
   }
   function iconTwogis() {
-    return `<span class="ql-src-badge ql-src-badge--twogis" aria-hidden="true">2</span>`;
+    return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#2FAE5F"/><text x="12" y="15.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="800" font-family="Arial, sans-serif">2ГИС</text></svg>`;
   }
 
   function injectStyles() {
@@ -392,16 +342,18 @@
   --ql-star-empty: #E0E0E0;
   --ql-card-bg: #FFFFFF;
   --ql-text: #2C2C2C;
-  --ql-text-muted: #888888;
+  --ql-text-muted: #8A8A8A;
   --ql-border: #ECECEC;
-  --ql-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --ql-radius: 14px;
-  --ql-gap: 16px;
+  --ql-tab-border: #E5E5E5;
+  --ql-shadow: 0 4px 18px rgba(0,0,0,0.06);
+  --ql-radius: 18px;
   --ql-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-family: var(--ql-font);
   color: var(--ql-text);
-  max-width: 100%;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 16px;
   box-sizing: border-box;
 }
 #${ROOT_ID} *, #${ROOT_ID} *::before, #${ROOT_ID} *::after { box-sizing: border-box; }
@@ -411,92 +363,85 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   justify-content: center;
 }
 #${ROOT_ID} .ql-tab {
   background: #FFFFFF;
-  border: 2px solid var(--ql-accent);
-  color: var(--ql-accent);
-  border-radius: 12px;
-  padding: 10px 18px;
-  font: 600 15px/1.2 var(--ql-font);
+  border: 1.5px solid var(--ql-tab-border);
+  color: #3A3A3A;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font: 600 14px/1.2 var(--ql-font);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: transform 0.15s, background 0.15s, color 0.15s;
+  transition: transform .15s, background .2s, color .2s, border-color .2s, box-shadow .2s;
 }
-#${ROOT_ID} .ql-tab:hover { transform: translateY(-1px); }
+#${ROOT_ID} .ql-tab:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 #${ROOT_ID} .ql-tab--active {
   background: var(--ql-accent);
+  border-color: var(--ql-accent);
   color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(245,166,35,0.25);
 }
-#${ROOT_ID} .ql-tab__rating { font-weight: 700; }
 #${ROOT_ID} .ql-tab__icon { display: inline-flex; align-items: center; }
-#${ROOT_ID} .ql-src-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-}
-#${ROOT_ID} .ql-src-badge--yandex { background: #FC3F1D; }
-#${ROOT_ID} .ql-src-badge--twogis { background: #2FAE5F; }
+#${ROOT_ID} .ql-tab__rating { font-weight: 700; opacity: .95; }
+#${ROOT_ID} .ql-tab--active .ql-tab__icon svg circle[fill] { filter: brightness(1.1); }
 
 /* Summary */
 #${ROOT_ID} .ql-summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin: 0 0 20px;
-  justify-content: center;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 0 4px;
 }
-#${ROOT_ID} .ql-summary__big { font-size: 32px; font-weight: 700; line-height: 1; color: var(--ql-text); }
-#${ROOT_ID} .ql-summary__of { font-size: 16px; color: var(--ql-text-muted); }
-#${ROOT_ID} .ql-summary__count { font-size: 14px; color: var(--ql-text-muted); }
+#${ROOT_ID} .ql-summary__rating { font-size: 20px; font-weight: 700; color: var(--ql-text); }
+#${ROOT_ID} .ql-summary__of { font-size: 14px; color: var(--ql-text-muted); }
+#${ROOT_ID} .ql-summary__count { font-size: 13px; color: var(--ql-text-muted); margin-left: 8px; }
+#${ROOT_ID} .ql-stars--summary { font-size: 16px; margin-left: 4px; }
 
 /* Stars */
-#${ROOT_ID} .ql-stars { display: inline-flex; gap: 2px; font-size: 18px; line-height: 1; }
+#${ROOT_ID} .ql-stars { display: inline-flex; gap: 1px; font-size: 16px; line-height: 1; }
+#${ROOT_ID} .ql-star { display: inline-flex; align-items: center; }
 #${ROOT_ID} .ql-star--filled { color: var(--ql-star); }
 #${ROOT_ID} .ql-star--empty  { color: var(--ql-star-empty); }
+#${ROOT_ID} .ql-star--half svg { width: 1em; height: 1em; }
 
 /* Carousel */
 #${ROOT_ID} .ql-carousel { position: relative; }
-#${ROOT_ID} .ql-carousel__viewport { overflow: hidden; }
+#${ROOT_ID} .ql-carousel__viewport { overflow: hidden; padding: 4px 0 8px; }
 #${ROOT_ID} .ql-carousel__container { display: flex; align-items: stretch; }
 #${ROOT_ID} .ql-slide {
   flex: 0 0 100%;
   min-width: 0;
   padding: 0 8px;
 }
-@media (min-width: 768px) { #${ROOT_ID} .ql-slide { flex-basis: 50%; } }
+@media (min-width: 640px) { #${ROOT_ID} .ql-slide { flex-basis: 50%; } }
 @media (min-width: 1024px) { #${ROOT_ID} .ql-slide { flex-basis: 33.3333%; } }
 
 /* Card */
 #${ROOT_ID} .ql-card {
   background: var(--ql-card-bg);
-  border: 1px solid var(--ql-border);
   border-radius: var(--ql-radius);
   box-shadow: var(--ql-shadow);
-  padding: 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   height: 100%;
   gap: 12px;
+  transition: box-shadow .2s, transform .2s;
 }
+#${ROOT_ID} .ql-card:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.08); transform: translateY(-2px); }
 #${ROOT_ID} .ql-card__head { display: flex; gap: 12px; align-items: flex-start; }
 #${ROOT_ID} .ql-card__avatar {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #E5E5E5;
+  background: #E8EAF0;
   flex-shrink: 0;
   overflow: hidden;
   display: flex;
@@ -510,79 +455,101 @@
 #${ROOT_ID} .ql-card__initial { line-height: 1; }
 #${ROOT_ID} .ql-card__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 #${ROOT_ID} .ql-card__author { font-weight: 600; font-size: 15px; color: var(--ql-text); }
-#${ROOT_ID} .ql-card__date { font-size: 13px; color: var(--ql-text-muted); }
-#${ROOT_ID} .ql-card__body { flex: 1; min-height: 0; }
+#${ROOT_ID} .ql-card__date { font-size: 12px; color: var(--ql-text-muted); }
+#${ROOT_ID} .ql-card__body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 #${ROOT_ID} .ql-card__text {
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--ql-text);
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
 }
-@media (max-width: 767px) { #${ROOT_ID} .ql-card__text { -webkit-line-clamp: 5; } }
+#${ROOT_ID} .ql-card__text--expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+#${ROOT_ID} .ql-card__more {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ql-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color .15s;
+}
+#${ROOT_ID} .ql-card__more:hover { color: var(--ql-accent); }
 #${ROOT_ID} .ql-card__foot {
   display: flex;
   justify-content: flex-start;
   gap: 12px;
   margin-top: auto;
+  padding-top: 4px;
   flex-wrap: wrap;
 }
 #${ROOT_ID} .ql-card__link {
   color: var(--ql-text-muted);
-  font-size: 13px;
+  font-size: 12px;
   text-decoration: underline;
-  transition: color 0.15s;
+  text-underline-offset: 2px;
+  transition: color .15s;
 }
 #${ROOT_ID} .ql-card__link:hover { color: var(--ql-accent); }
 
-/* Controls */
+/* Controls: arrows + progress bar, bottom of carousel */
 #${ROOT_ID} .ql-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 0 8px;
 }
+#${ROOT_ID} .ql-nav { display: flex; gap: 10px; flex-shrink: 0; }
 #${ROOT_ID} .ql-arrow {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--ql-accent);
-  background: #fff;
-  color: var(--ql-accent);
+  border: 0;
+  background: var(--ql-accent);
+  color: #fff;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.15s;
-  flex-shrink: 0;
+  transition: background .15s, opacity .15s, transform .15s;
 }
 #${ROOT_ID} .ql-arrow:hover:not(:disabled) {
-  background: var(--ql-accent);
-  color: #fff;
+  background: var(--ql-accent-hover);
   transform: scale(1.05);
 }
-#${ROOT_ID} .ql-arrow:disabled { opacity: 0.35; cursor: not-allowed; }
-@media (max-width: 767px) { #${ROOT_ID} .ql-arrow { width: 36px; height: 36px; } }
+#${ROOT_ID} .ql-arrow:disabled {
+  background: #E5E5E5;
+  color: #B0B0B0;
+  cursor: not-allowed;
+}
 
 #${ROOT_ID} .ql-progress {
   flex: 1;
-  max-width: 280px;
   height: 3px;
   background: var(--ql-border);
   border-radius: 3px;
   overflow: hidden;
+  max-width: 560px;
 }
 #${ROOT_ID} .ql-progress__bar {
   height: 100%;
   background: var(--ql-accent);
   transform: scaleX(0);
   transform-origin: left center;
-  transition: transform 0.1s linear;
+  transition: transform .15s linear;
 }
 
 /* Empty & error */
@@ -597,8 +564,8 @@
   background: var(--ql-accent);
   color: #fff;
   border: 0;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 999px;
+  padding: 10px 22px;
   font: 600 14px var(--ql-font);
   cursor: pointer;
 }
@@ -613,19 +580,25 @@
   animation: ql-pulse 1.5s ease-in-out infinite;
 }
 #${ROOT_ID} .ql-skeleton-pill {
-  width: 120px;
-  height: 42px;
-  border-radius: 12px;
+  width: 110px;
+  height: 38px;
+  border-radius: 999px;
 }
 #${ROOT_ID} .ql-skeleton-line { border-radius: 4px; }
 #${ROOT_ID} .ql-tabs--skeleton { pointer-events: none; }
-#${ROOT_ID} .ql-summary--skeleton { display: flex; justify-content: center; }
+#${ROOT_ID} .ql-summary--skeleton { display: flex; justify-content: flex-start; padding: 0 4px; }
 #${ROOT_ID} .ql-card--skeleton {
-  border: 1px solid var(--ql-border);
   border-radius: var(--ql-radius);
-  padding: 18px;
+  padding: 20px;
   background: #fff;
-  min-height: 180px;
+  min-height: 200px;
+  box-shadow: var(--ql-shadow);
+}
+
+@media (max-width: 639px) {
+  #${ROOT_ID} .ql-tab { padding: 8px 14px; font-size: 13px; }
+  #${ROOT_ID} .ql-arrow { width: 36px; height: 36px; }
+  #${ROOT_ID} .ql-summary { justify-content: center; }
 }
 `;
 
