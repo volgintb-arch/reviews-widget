@@ -32,29 +32,31 @@ await registerCors(app);
 await registerRateLimit(app);
 await registerAuth(app);
 
-// Serve admin SPA static files
+// Serve admin SPA static files (decorateReply enabled → reply.sendFile works for SPA fallback)
 const adminDistPath = path.resolve(__dirname, '../admin/dist');
 await app.register(fastifyStatic, {
   root: adminDistPath,
   prefix: '/admin/',
-  decorateReply: false,
-  wildcard: false,
 });
 
-// Admin SPA fallback — serve index.html for client-side routes
-app.get('/admin/*', async (_request, reply) => {
-  return reply.sendFile('index.html', adminDistPath);
-});
-app.get('/admin', async (_request, reply) => {
-  return reply.redirect('/admin/');
-});
-
-// Serve widget.js
+// Serve widget.js (decorateReply:false — avoid conflict with admin registration)
 const widgetDistPath = path.resolve(__dirname, '../widget/dist');
 await app.register(fastifyStatic, {
   root: widgetDistPath,
   prefix: '/widget/',
   decorateReply: false,
+});
+
+app.get('/admin', async (_request, reply) => {
+  return reply.redirect('/admin/');
+});
+
+// SPA fallback — for any unknown /admin/* path serve index.html so React Router takes over
+app.setNotFoundHandler((request, reply) => {
+  if (request.url.startsWith('/admin/')) {
+    return reply.sendFile('index.html', adminDistPath);
+  }
+  reply.code(404).send({ error: 'Not Found', message: `Route ${request.method}:${request.url} not found` });
 });
 
 // Routes
