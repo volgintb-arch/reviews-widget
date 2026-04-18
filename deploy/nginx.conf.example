@@ -1,0 +1,61 @@
+# /etc/nginx/sites-available/reviews-widget
+#
+# После правки: sudo ln -sf ... && sudo nginx -t && sudo systemctl reload nginx
+
+server {
+    listen 80;
+    server_name reviews.questlegends.ru;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name reviews.questlegends.ru;
+
+    # certbot подставит эти пути автоматически при `certbot --nginx`
+    ssl_certificate     /etc/letsencrypt/live/reviews.questlegends.ru/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/reviews.questlegends.ru/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers off;
+
+    # Security headers
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # gzip
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 512;
+
+    # Размер тела запроса (админка не загружает файлы, но на всякий)
+    client_max_body_size 2m;
+
+    # Всё остальное → Fastify на 3010 (API + /widget/* + /admin/* через @fastify/static)
+    location / {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # Виджет — можно кэшировать агрессивно (содержимое меняется только через rebuild)
+    location = /widget/widget.js {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_set_header Host $host;
+        add_header Cache-Control "public, max-age=3600, must-revalidate" always;
+        add_header Access-Control-Allow-Origin "*" always;
+    }
+
+    # Логи
+    access_log /var/log/nginx/reviews-widget.access.log;
+    error_log  /var/log/nginx/reviews-widget.error.log;
+}
