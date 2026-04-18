@@ -29,10 +29,6 @@
     embla: null,
   };
 
-  injectStyles();
-  renderSkeleton();
-  init();
-
   async function init() {
     try {
       const [configRes, dataRes] = await Promise.all([
@@ -632,4 +628,8 @@
   min-height: 180px;
 }
 `;
+
+  injectStyles();
+  renderSkeleton();
+  init();
 })();
