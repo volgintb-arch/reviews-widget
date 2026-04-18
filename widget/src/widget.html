@@ -1,0 +1,20 @@
+<!--
+  QuestLegends Reviews Widget — snippet for Tilda block T123.
+
+  Usage:
+    1. Create a T123 (HTML) block on your Tilda page where you want reviews to appear.
+    2. Copy everything between the markers below into the block.
+    3. Change data-city if needed (e.g. "omsk").
+    4. Make sure the domain is added to ALLOWED_ORIGINS in backend .env.
+
+  Optional data attributes on the root div:
+    data-city            — required, city slug configured in admin (e.g. "brn")
+    data-api             — override API base URL (default: https://reviews.questlegends.ru)
+    data-cards-desktop   — cards visible on desktop (overrides admin setting)
+    data-cards-mobile    — cards visible on mobile (overrides admin setting)
+-->
+
+<!-- ===== copy from here ===== -->
+<div id="ql-reviews" data-city="brn"></div>
+<script src="https://reviews.questlegends.ru/widget/widget.js" defer></script>
+<!-- ===== to here ===== -->
