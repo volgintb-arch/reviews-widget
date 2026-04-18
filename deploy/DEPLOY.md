@@ -106,7 +106,7 @@ sudo -u postgres psql reviews_widget -c "SELECT slug, name FROM cities;"
 sudo mkdir -p /var/log/pm2
 sudo chown -R $USER:$USER /var/log/pm2
 
-pm2 start deploy/ecosystem.config.js
+pm2 start deploy/ecosystem.config.cjs
 pm2 save
 pm2 startup                # выполните команду, которую PM2 распечатает
 ```
