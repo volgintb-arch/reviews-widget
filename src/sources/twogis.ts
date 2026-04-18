@@ -37,11 +37,9 @@ export async function fetchTwoGisReviews(firmId: string): Promise<SourceResult> 
   while (offset < MAX_REVIEWS) {
     const url = new URL(`${config.TWOGIS_API_BASE}/branches/${firmId}/reviews`);
     url.searchParams.set('limit', String(PAGE_SIZE));
-    url.searchParams.set('offset', String(offset));
-    url.searchParams.set('is_advertiser', 'false');
-    url.searchParams.set('fields', 'meta.providers,meta.branch_rating,meta.branch_reviews_count,meta.total_count,reviews.hiding_reason,reviews.emojis,reviews.trust_factors');
-    url.searchParams.set('rated', 'false');
-    url.searchParams.set('sort_by', 'trust');
+    if (offset > 0) url.searchParams.set('offset', String(offset));
+    url.searchParams.set('fields', 'meta.branch_rating,meta.branch_reviews_count,meta.total_count');
+    url.searchParams.set('sort_by', 'date_created');
     url.searchParams.set('key', config.TWOGIS_PUBLIC_KEY);
     url.searchParams.set('locale', 'ru_RU');
 

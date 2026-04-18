@@ -3,15 +3,20 @@ import crypto from 'crypto';
 import { config } from '../config.js';
 import type { RawReview, SourceResult } from './types.js';
 
-// Selectors — update here if Yandex changes widget HTML structure
 const SELECTORS = {
-  comment:  '.comment',
-  author:   '[itemprop="name"]',
-  avatar:   '.comment__avatar img',
-  rating:   '[itemprop="ratingValue"]',
-  date:     '[itemprop="datePublished"]',
-  text:     '[itemprop="reviewBody"]',
-  reply:    '.business-review-comment-content__bubble',
+  comment: '.comment',
+  author: '.comment__name',
+  avatar: '.comment__photo',
+  date: '.comment__date',
+  text: '.comment__text',
+  star: '.stars-list__star',
+  starEmpty: '.stars-list__star._empty',
+  reply: '.comment__business-answer, .business-answer',
+};
+
+const RU_MONTHS: Record<string, number> = {
+  'январ': 0, 'феврал': 1, 'март': 2, 'апрел': 3, 'мая': 4, 'ма': 4,
+  'июн': 5, 'июл': 6, 'август': 7, 'сентябр': 8, 'октябр': 9, 'ноябр': 10, 'декабр': 11,
 };
 
 export async function fetchYandexReviews(orgId: string): Promise<SourceResult> {
@@ -39,16 +44,20 @@ export function parseYandexHtml(html: string, orgId: string): SourceResult {
 
   $(SELECTORS.comment).each((_, el) => {
     const $el = $(el);
-    const author = $el.find(SELECTORS.author).text().trim() || 'Аноним';
-    const avatarUrl = $el.find(SELECTORS.avatar).attr('src') || null;
-    const ratingStr = $el.find(SELECTORS.rating).attr('content') || $el.find(SELECTORS.rating).text().trim();
-    const rating = parseInt(ratingStr, 10) || 5;
-    const dateStr = $el.find(SELECTORS.date).attr('content') || $el.find(SELECTORS.date).text().trim();
-    const text = $el.find(SELECTORS.text).text().trim();
-    const reply = $el.find(SELECTORS.reply).text().trim() || null;
+    const author = $el.find(SELECTORS.author).first().text().trim() || 'Аноним';
+    const avatarUrl = $el.find(SELECTORS.avatar).first().attr('src') || null;
+    const dateStr = $el.find(SELECTORS.date).first().text().trim();
+    const text = $el.find(SELECTORS.text).first().text().trim();
+
+    const totalStars = $el.find(SELECTORS.star).length;
+    const emptyStars = $el.find(SELECTORS.starEmpty).length;
+    const rating = totalStars > 0 ? totalStars - emptyStars : 5;
+
+    const reply = $el.find(SELECTORS.reply).first().text().trim() || null;
 
     if (!text) return;
 
+    const publishedAt = parseRussianDate(dateStr);
     const externalId = crypto
       .createHash('sha256')
       .update(`${author}|${dateStr}|${text.slice(0, 100)}`)
@@ -62,16 +71,44 @@ export function parseYandexHtml(html: string, orgId: string): SourceResult {
       rating,
       text,
       reply,
-      publishedAt: dateStr ? new Date(dateStr).toISOString() : new Date().toISOString(),
+      publishedAt,
       reviewUrl: `https://yandex.ru/maps/org/${orgId}/reviews/`,
     });
   });
 
-  // Calculate average
   const totalCount = reviews.length;
   const averageRating = totalCount > 0
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalCount
     : null;
 
   return { reviews, averageRating, totalCount };
+}
+
+function parseRussianDate(s: string): string {
+  if (!s) return new Date().toISOString();
+  const m = s.trim().toLowerCase().match(/^(\d{1,2})\s+([а-яё]+)(?:\s+(\d{4}))?/);
+  if (!m) return new Date().toISOString();
+
+  const day = parseInt(m[1], 10);
+  const monthKey = m[2];
+  const yearStr = m[3];
+
+  let month = -1;
+  for (const key in RU_MONTHS) {
+    if (monthKey.startsWith(key)) {
+      month = RU_MONTHS[key];
+      break;
+    }
+  }
+  if (month < 0) return new Date().toISOString();
+
+  const now = new Date();
+  let year = yearStr ? parseInt(yearStr, 10) : now.getFullYear();
+  const candidate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+
+  if (!yearStr && candidate.getTime() > now.getTime() + 86400000) {
+    candidate.setUTCFullYear(year - 1);
+  }
+
+  return candidate.toISOString();
 }
