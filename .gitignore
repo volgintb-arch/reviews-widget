@@ -7,3 +7,4 @@ widget/dist/
 .DS_Store
 coverage/
 .prisma/
+admin/tsconfig.tsbuildinfo
