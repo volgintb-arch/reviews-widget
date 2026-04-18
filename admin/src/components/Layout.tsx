@@ -5,10 +5,10 @@ import { clearToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/admin/cities', icon: MapPin, label: 'Города' },
-  { to: '/admin/reviews', icon: MessageSquare, label: 'Отзывы' },
-  { to: '/admin/settings', icon: Settings, label: 'Настройки' },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/cities', icon: MapPin, label: 'Города' },
+  { to: '/reviews', icon: MessageSquare, label: 'Отзывы' },
+  { to: '/settings', icon: Settings, label: 'Настройки' },
 ];
 
 export function Layout() {

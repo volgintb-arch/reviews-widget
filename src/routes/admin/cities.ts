@@ -33,7 +33,7 @@ export async function citiesRoute(app: FastifyInstance) {
       site_url: city.siteUrl,
       is_active: city.isActive,
       reviews_count: city._count.reviews,
-      statuses: city.statuses.map(s => ({
+      sources: city.statuses.map(s => ({
         source: s.source,
         last_success_at: s.lastSuccessAt?.toISOString() ?? null,
         last_error_at: s.lastErrorAt?.toISOString() ?? null,
