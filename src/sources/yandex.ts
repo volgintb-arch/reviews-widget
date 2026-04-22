@@ -141,6 +141,18 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
   };
   console.log('[Yandex] Selector counts:', JSON.stringify(counts));
 
+  // Log rating-related classes to find correct selector
+  const ratingClasses = new Set<string>();
+  $('[class]').each((_, el) => {
+    const cls = $(el).attr('class') || '';
+    if (cls.includes('rating') || cls.includes('stars')) ratingClasses.add(cls.split(' ').find(c => c.includes('rating') || c.includes('stars')) || '');
+  });
+  console.log('[Yandex] Rating/stars classes found:', [...ratingClasses].filter(Boolean).slice(0, 15).join(', '));
+
+  // Log first review's avatar element html for debugging
+  const firstReview = $('[class*="business-review-view__review"], .business-review-view').first();
+  console.log('[Yandex] First review avatar HTML:', firstReview.find('[class*="user-icon"], [class*="author-image"], [class*="avatar"]').html()?.slice(0, 200) ?? 'NOT FOUND');
+
   const reviewEls = $('[class*="business-review-view__review"], .business-review-view, [class*="orgpage-reviews-view__review"]');
 
   reviewEls.each((_, el) => {
@@ -158,7 +170,7 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
     if (!text) return;
 
     // Count filled stars inside this review's rating block
-    const filledStars = $el.find('.business-review-view__rating ._full').length;
+    const filledStars = $el.find('.business-review-view__rating [class*="__star"][class*="_full"], .business-review-view__rating ._full').length;
     const rating = filledStars > 0 && filledStars <= 5 ? filledStars : 5;
 
     const reply = $el.find('.business-review-view__comment-expand').first().text().trim() || null;
@@ -184,8 +196,8 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
 
   // Extract the real overall rating and total count from the page
   // (Yandex counts all ratings, including those without text)
-  const ratingText = $('.business-rating-badge-view__rating, .orgpage-rating-view__rating, [class*="rating-badge"] [class*="rating__value"]').first().text().trim();
-  const countText = $('.business-rating-badge-view__count, .orgpage-rating-view__count, [class*="rating-badge"] [class*="count"]').first().text().trim();
+  const ratingText = $('.business-summary-rating-badge-view__rating, .business-summary-rating__main-rating').first().text().trim();
+  const countText = $('.business-summary-rating-badge-view__rating-count').first().text().trim();
   console.log('[Yandex] Page rating:', ratingText, 'count text:', countText);
 
   const pageRating = ratingText ? parseFloat(ratingText.replace(',', '.')) : null;

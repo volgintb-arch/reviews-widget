@@ -45,6 +45,9 @@ await app.register(fastifyStatic, {
   root: widgetDistPath,
   prefix: '/widget/',
   decorateReply: false,
+  setHeaders(res) {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+  },
 });
 
 app.get('/admin', async (_request, reply) => {
