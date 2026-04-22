@@ -172,8 +172,9 @@
 
   function renderCard(r, idx) {
     const initial = (r.author || '?').trim().charAt(0).toUpperCase() || '?';
-    const avatar = r.avatar
-      ? `<img src="${escapeAttr(r.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ql-card__initial',textContent:'${escapeAttr(initial)}'}))">`
+    const avatarSrc = r.avatar && r.avatar.startsWith('/') ? `${apiBase}${r.avatar}` : r.avatar;
+    const avatar = avatarSrc
+      ? `<img src="${escapeAttr(avatarSrc)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ql-card__initial',textContent:'${escapeAttr(initial)}'}))">`
       : `<span class="ql-card__initial">${escapeHtml(initial)}</span>`;
     const sourceLabel = r.source === '2gis' ? 'Отзыв 2ГИС' : 'Отзыв Яндекс Карты';
     const expanded = state.expanded.has(idx);
