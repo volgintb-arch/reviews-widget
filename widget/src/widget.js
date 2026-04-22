@@ -326,13 +326,13 @@
   }
 
   function iconAll() {
-    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#EC4899);"><svg viewBox="0 0 24 24" width="11" height="11" fill="#fff" aria-hidden="true"><path d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg></span>`;
+    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg>`;
   }
   function iconYandex() {
-    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#FC3F1D;color:#fff;font:700 11px/1 Arial,sans-serif;">Я</span>`;
+    return `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#FC3F1D"/><text x="10" y="14.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="12" fill="#fff">Я</text></svg>`;
   }
   function iconTwogis() {
-    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:#2FAE5F;color:#fff;font:700 8px/1 Arial,sans-serif;">2ГИС</span>`;
+    return `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect width="20" height="20" rx="5" fill="#1BA047"/><text x="10" y="10" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" font-weight="900" font-size="6.5" fill="#fff">2ГИС</text></svg>`;
   }
 
   function injectStyles() {
@@ -415,10 +415,10 @@
 #${ROOT_ID} .ql-summary__rating { font-size: 20px; font-weight: 700; color: var(--ql-text); }
 #${ROOT_ID} .ql-summary__of { font-size: 14px; color: var(--ql-text-muted); }
 #${ROOT_ID} .ql-summary__count { font-size: 13px; color: var(--ql-text-muted); margin-left: 8px; }
-#${ROOT_ID} .ql-stars--summary { font-size: 16px; margin-left: 4px; }
+#${ROOT_ID} .ql-stars--summary { font-size: 22px; margin-left: 4px; }
 
 /* Stars */
-#${ROOT_ID} .ql-stars { display: inline-flex; gap: 1px; font-size: 16px; line-height: 1; }
+#${ROOT_ID} .ql-stars { display: inline-flex; gap: 1px; font-size: 20px; line-height: 1; }
 #${ROOT_ID} .ql-star { display: inline-flex; align-items: center; }
 #${ROOT_ID} .ql-star--filled { color: var(--ql-star); }
 #${ROOT_ID} .ql-star--empty  { color: var(--ql-star-empty); }
