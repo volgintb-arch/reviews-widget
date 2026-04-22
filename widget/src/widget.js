@@ -95,7 +95,8 @@
 
   function getCardsVisible() {
     const w = window.innerWidth;
-    if (w < 640) return cardsMobileOverride || state.config?.cards_visible_mobile || 1;
+    if (w < 420) return 1;
+    if (w < 768) return cardsMobileOverride || state.config?.cards_visible_mobile || 1;
     if (w < 1024) return 2;
     return cardsDesktopOverride || state.config?.cards_visible_desktop || 3;
   }
@@ -368,36 +369,33 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 12px;
+  padding: 0 16px;
   box-sizing: border-box;
 }
-@media (min-width: 640px) { #${ROOT_ID} { padding: 0 16px; } }
 #${ROOT_ID} *, #${ROOT_ID} *::before, #${ROOT_ID} *::after { box-sizing: border-box; }
 
 /* Tabs */
 #${ROOT_ID} .ql-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 18px;
   justify-content: flex-start;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-tabs { gap: 10px; margin-bottom: 18px; } }
 #${ROOT_ID} .ql-tab {
   background: #FFFFFF;
   border: 1.5px solid var(--ql-tab-border);
   color: #3A3A3A;
   border-radius: 999px;
-  padding: 8px 14px;
-  font: 600 13px/1.2 var(--ql-font);
+  padding: 9px 18px;
+  font: 600 14px/1.2 var(--ql-font);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   transition: transform .15s, background .2s, color .2s, border-color .2s, box-shadow .2s;
   white-space: nowrap;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-tab { padding: 9px 18px; font-size: 14px; gap: 8px; } }
 #${ROOT_ID} .ql-tab:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 #${ROOT_ID} .ql-tab--active {
   background: var(--ql-accent);
@@ -414,21 +412,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 18px;
+  gap: 8px;
+  margin: 0 0 24px;
   padding: 0 4px;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-summary { gap: 8px; margin-bottom: 24px; } }
 #${ROOT_ID} .ql-summary__rating { font-size: 20px; font-weight: 700; color: var(--ql-text); }
 #${ROOT_ID} .ql-summary__of { font-size: 14px; color: var(--ql-text-muted); }
-#${ROOT_ID} .ql-summary__count { font-size: 13px; color: var(--ql-text-muted); margin-left: 6px; flex-basis: 100%; }
-@media (min-width: 480px) { #${ROOT_ID} .ql-summary__count { flex-basis: auto; margin-left: 8px; } }
-#${ROOT_ID} .ql-stars--summary { font-size: 20px; margin-left: 2px; }
-@media (min-width: 640px) { #${ROOT_ID} .ql-stars--summary { font-size: 22px; margin-left: 4px; } }
+#${ROOT_ID} .ql-summary__count { font-size: 13px; color: var(--ql-text-muted); margin-left: 8px; }
+#${ROOT_ID} .ql-stars--summary { font-size: 22px; margin-left: 4px; }
 
 /* Stars */
-#${ROOT_ID} .ql-stars { display: inline-flex; gap: 1px; font-size: 18px; line-height: 1; }
-@media (min-width: 640px) { #${ROOT_ID} .ql-stars { font-size: 20px; } }
+#${ROOT_ID} .ql-stars { display: inline-flex; gap: 1px; font-size: 20px; line-height: 1; }
 #${ROOT_ID} .ql-star { display: inline-flex; align-items: center; }
 #${ROOT_ID} .ql-star--filled { color: var(--ql-star); }
 #${ROOT_ID} .ql-star--empty  { color: var(--ql-star-empty); }
@@ -438,12 +432,19 @@
 #${ROOT_ID} .ql-carousel { position: relative; }
 #${ROOT_ID} .ql-carousel__viewport { overflow: hidden; padding: 4px 0 8px; }
 #${ROOT_ID} .ql-carousel__container { display: flex; align-items: stretch; }
+/* < 420px: force 1 card (too narrow for 2) */
 #${ROOT_ID} .ql-slide {
   flex: 0 0 100%;
   min-width: 0;
   padding: 0 6px;
 }
+/* 420+: honor cards_visible_mobile config (1 or 2) */
+@media (min-width: 420px) {
+  #${ROOT_ID} .ql-slide { flex: 0 0 calc(100% / var(--ql-cards-mobile, 1)); }
+}
+/* 768+: 2 cards (tablet) */
 @media (min-width: 768px) { #${ROOT_ID} .ql-slide { flex: 0 0 50%; padding: 0 8px; } }
+/* 1024+: cards_visible_desktop */
 @media (min-width: 1024px) { #${ROOT_ID} .ql-slide { flex: 0 0 calc(100% / var(--ql-cards-desktop, 3)); } }
 
 /* Card */
@@ -451,20 +452,18 @@
   background: var(--ql-card-bg);
   border-radius: var(--ql-radius);
   box-shadow: var(--ql-shadow);
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 10px;
+  gap: 12px;
   transition: box-shadow .2s, transform .2s;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-card { padding: 20px; gap: 12px; } }
 #${ROOT_ID} .ql-card:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.08); transform: translateY(-2px); }
-#${ROOT_ID} .ql-card__head { display: flex; gap: 10px; align-items: flex-start; }
-@media (min-width: 640px) { #${ROOT_ID} .ql-card__head { gap: 12px; } }
+#${ROOT_ID} .ql-card__head { display: flex; gap: 12px; align-items: flex-start; }
 #${ROOT_ID} .ql-card__avatar {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: #E8EAF0;
   flex-shrink: 0;
@@ -474,21 +473,19 @@
   justify-content: center;
   color: #666;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-card__avatar { width: 48px; height: 48px; font-size: 18px; } }
 #${ROOT_ID} .ql-card__avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 #${ROOT_ID} .ql-card__initial { line-height: 1; }
 #${ROOT_ID} .ql-card__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 #${ROOT_ID} .ql-card__author {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ql-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-card__author { font-size: 15px; } }
 #${ROOT_ID} .ql-card__date { font-size: 12px; color: var(--ql-text-muted); white-space: nowrap; }
 #${ROOT_ID} .ql-card__body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 #${ROOT_ID} .ql-card__text {
@@ -542,16 +539,14 @@
 #${ROOT_ID} .ql-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 0 6px;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 0 8px;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-controls { gap: 16px; margin-top: 18px; padding: 0 8px; } }
-#${ROOT_ID} .ql-nav { display: flex; gap: 8px; flex-shrink: 0; }
-@media (min-width: 640px) { #${ROOT_ID} .ql-nav { gap: 10px; } }
+#${ROOT_ID} .ql-nav { display: flex; gap: 10px; flex-shrink: 0; }
 #${ROOT_ID} .ql-arrow {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 0;
   background: var(--ql-accent);
@@ -562,7 +557,6 @@
   justify-content: center;
   transition: background .15s, opacity .15s, transform .15s;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-arrow { width: 40px; height: 40px; } }
 #${ROOT_ID} .ql-arrow:hover:not(:disabled) {
   background: var(--ql-accent-hover);
   transform: scale(1.05);
@@ -632,12 +626,28 @@
   box-shadow: var(--ql-shadow);
 }
 
-/* Very narrow screens (< 360px) — iPhone SE, small Androids */
+/* Mobile (< 640px) — compact tabs, smaller controls */
+@media (max-width: 639px) {
+  #${ROOT_ID} { padding: 0 12px; }
+  #${ROOT_ID} .ql-tab { padding: 8px 14px; font-size: 13px; gap: 6px; }
+  #${ROOT_ID} .ql-tabs { gap: 8px; margin-bottom: 16px; }
+  #${ROOT_ID} .ql-summary { gap: 6px; margin-bottom: 18px; }
+  #${ROOT_ID} .ql-stars--summary { font-size: 20px; }
+  #${ROOT_ID} .ql-card { padding: 16px; gap: 10px; }
+  #${ROOT_ID} .ql-card__head { gap: 10px; }
+  #${ROOT_ID} .ql-card__avatar { width: 44px; height: 44px; font-size: 16px; }
+  #${ROOT_ID} .ql-card__author { font-size: 14px; }
+  #${ROOT_ID} .ql-stars { font-size: 18px; }
+  #${ROOT_ID} .ql-arrow { width: 36px; height: 36px; }
+  #${ROOT_ID} .ql-controls { gap: 12px; margin-top: 14px; }
+}
+
+/* Very narrow (< 360px) — iPhone SE, small Androids */
 @media (max-width: 359px) {
   #${ROOT_ID} { padding: 0 8px; }
   #${ROOT_ID} .ql-tab { padding: 7px 12px; font-size: 12px; }
   #${ROOT_ID} .ql-card { padding: 14px; }
-  #${ROOT_ID} .ql-card__avatar { width: 38px; height: 38px; font-size: 15px; }
+  #${ROOT_ID} .ql-card__avatar { width: 40px; height: 40px; font-size: 15px; }
   #${ROOT_ID} .ql-summary__rating { font-size: 18px; }
   #${ROOT_ID} .ql-stars--summary { font-size: 18px; }
 }
