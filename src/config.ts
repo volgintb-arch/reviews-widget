@@ -12,6 +12,8 @@ const envSchema = z.object({
   YANDEX_WIDGET_BASE: z.string().url().default('https://yandex.ru/maps-reviews-widget'),
   ALLOWED_ORIGINS: z.string().transform(s => s.split(',').map(o => o.trim()).filter(Boolean)),
   PUBLIC_API_BASE: z.string().url().default('https://reviews.questlegends.ru'),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

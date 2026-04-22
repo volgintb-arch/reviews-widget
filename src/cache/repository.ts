@@ -17,6 +17,7 @@ function proxyAvatarUrl(url: string | null, source: string): string | null {
 }
 
 export async function upsertReviews(cityId: number, source: string, reviews: RawReview[]) {
+  const now = new Date();
   for (const review of reviews) {
     const id = crypto.createHash('sha256').update(`${source}:${review.externalId}`).digest('hex');
 
@@ -34,14 +35,16 @@ export async function upsertReviews(cityId: number, source: string, reviews: Raw
         reply: review.reply,
         reviewUrl: review.reviewUrl,
         publishedAt: new Date(review.publishedAt),
-        fetchedAt: new Date(),
+        fetchedAt: now,
+        lastSeenAt: now,
       },
       update: {
         text: review.text,
         reply: review.reply,
         rating: review.rating,
         avatarUrl: review.avatarUrl,
-        fetchedAt: new Date(),
+        fetchedAt: now,
+        lastSeenAt: now,
       },
     });
   }

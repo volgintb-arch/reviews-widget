@@ -39,11 +39,13 @@ model Review {
   reviewUrl   String?  @map("review_url")
   publishedAt DateTime @map("published_at")
   fetchedAt   DateTime @default(now()) @map("fetched_at")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
   isHidden    Boolean  @default(false) @map("is_hidden")
 
   @@unique([source, externalId])
   @@index([cityId, isHidden, publishedAt(sort: Desc)])
   @@index([source])
+  @@index([lastSeenAt])
   @@map("reviews")
 }
 
