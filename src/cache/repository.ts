@@ -3,6 +3,19 @@ import { memoryCache } from './memory.js';
 import type { RawReview } from '../sources/types.js';
 import crypto from 'crypto';
 
+const YANDEX_AVATAR_HOSTS = ['avatars.mds.yandex.net', 'avatars.yandex.net', 'yastat.net'];
+
+function proxyAvatarUrl(url: string | null, source: string): string | null {
+  if (!url || source !== 'yandex') return url;
+  try {
+    const parsed = new URL(url);
+    if (YANDEX_AVATAR_HOSTS.includes(parsed.hostname)) {
+      return `/api/proxy/img?url=${encodeURIComponent(url)}`;
+    }
+  } catch { /* ignore */ }
+  return url;
+}
+
 export async function upsertReviews(cityId: number, source: string, reviews: RawReview[]) {
   for (const review of reviews) {
     const id = crypto.createHash('sha256').update(`${source}:${review.externalId}`).digest('hex');
@@ -143,7 +156,7 @@ export async function getPublicReviews(query: ReviewsQuery): Promise<ReviewsResu
       id: r.id,
       source: r.source,
       author: r.author,
-      avatar: r.avatarUrl,
+      avatar: proxyAvatarUrl(r.avatarUrl, r.source),
       rating: r.rating,
       text: r.text,
       date: r.publishedAt.toISOString(),
