@@ -626,13 +626,23 @@
   box-shadow: var(--ql-shadow);
 }
 
-/* Mobile (< 640px) — compact tabs, smaller controls */
+/* Mobile (< 640px) — tabs stretch full width, arrows centered, no progress bar */
 @media (max-width: 639px) {
-  #${ROOT_ID} { padding: 0 12px; }
-  #${ROOT_ID} .ql-tab { padding: 7px 12px; font-size: 12px; gap: 5px; }
-  #${ROOT_ID} .ql-tabs { gap: 6px; margin-bottom: 16px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  #${ROOT_ID} .ql-tabs::-webkit-scrollbar { display: none; }
-  #${ROOT_ID} .ql-tab { flex-shrink: 0; }
+  #${ROOT_ID} { padding: 0 10px; }
+  #${ROOT_ID} .ql-tabs {
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+  #${ROOT_ID} .ql-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 8px 6px;
+    font-size: 12px;
+    gap: 5px;
+  }
   #${ROOT_ID} .ql-tab__icon svg { width: 14px !important; height: 14px !important; }
   #${ROOT_ID} .ql-summary { gap: 6px; margin-bottom: 18px; }
   #${ROOT_ID} .ql-stars--summary { font-size: 20px; }
@@ -642,13 +652,14 @@
   #${ROOT_ID} .ql-card__author { font-size: 14px; }
   #${ROOT_ID} .ql-stars { font-size: 18px; }
   #${ROOT_ID} .ql-arrow { width: 36px; height: 36px; }
-  #${ROOT_ID} .ql-controls { gap: 12px; margin-top: 14px; }
+  #${ROOT_ID} .ql-controls { gap: 14px; margin-top: 14px; justify-content: center; }
+  #${ROOT_ID} .ql-progress { display: none; }
 }
 
 /* Very narrow (< 480px) — hide tab labels, keep icon + rating only */
 @media (max-width: 479px) {
   #${ROOT_ID} .ql-tab__label { display: none; }
-  #${ROOT_ID} .ql-tab { padding: 7px 11px; gap: 4px; }
+  #${ROOT_ID} .ql-tab { padding: 8px 4px; gap: 4px; }
 }
 
 /* iPhone SE / small Androids (< 360px) */
