@@ -30,7 +30,6 @@ export async function fetchYandexReviews(orgId: string): Promise<SourceResult> {
 }
 
 async function fetchYandexWithPlaywright(orgId: string): Promise<SourceResult> {
-  // Dynamic import — if playwright-core not installed, throws and we fall back
   const { chromium } = await import('playwright-core');
 
   const browser = await chromium.launch({
@@ -40,45 +39,69 @@ async function fetchYandexWithPlaywright(orgId: string): Promise<SourceResult> {
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      '--single-process',
+      '--disable-blink-features=AutomationControlled',
     ],
   });
 
   try {
-    const page = await browser.newPage();
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      locale: 'ru-RU',
+      timezoneId: 'Asia/Novosibirsk',
+      viewport: { width: 1280, height: 900 },
+    });
 
-    await page.setExtraHTTPHeaders({
-      'Accept-Language': 'ru-RU,ru;q=0.9',
+    const page = await context.newPage();
+
+    // Hide headless indicators
+    await page.addInitScript(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Object.defineProperty((globalThis as any).navigator, 'webdriver', { get: () => undefined });
     });
 
     await page.goto(`https://yandex.ru/maps/org/${orgId}/reviews/`, {
-      waitUntil: 'networkidle',
-      timeout: 30_000,
+      waitUntil: 'domcontentloaded',
+      timeout: 40_000,
     });
 
-    // Wait for at least one review to appear
-    await page.waitForSelector('[class*="orgpage-reviews-view__review"]', { timeout: 15_000 })
-      .catch(() => page.waitForSelector('.business-review-view', { timeout: 5_000 }));
+    // Dismiss cookie consent if shown
+    await page.locator('button:has-text("Принять"), button:has-text("Хорошо"), [class*="CookieAgreement"] button').first()
+      .click({ timeout: 3_000 })
+      .catch(() => {});
 
-    // Scroll to load all reviews (Yandex uses virtual scroll)
+    // Wait for reviews list — try multiple selectors
+    const reviewSelector = '.business-review-view, [class*="business-review-view__review"], [class*="orgpage-reviews-view"] [class*="review"]';
+    await page.waitForSelector(reviewSelector, { timeout: 20_000 });
+
+    // Scroll inside the reviews panel to load more
+    const scrollContainer = await page.$('[class*="scroll__content"], [class*="sidebar-view__panel"], .sidebar-view__panel-content');
+
     let prevCount = 0;
-    for (let i = 0; i < 20; i++) {
-      const count = await page.evaluate(() =>
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-        (globalThis as any).document.querySelectorAll('[class*="business-review-view"], [class*="orgpage-reviews-view__review"]').length
-      );
-      if (count === prevCount && i > 2) break;
+    for (let i = 0; i < 25; i++) {
+      const count = await page.locator('.business-review-view, [class*="business-review-view__review"]').count();
+      if (count === prevCount && i > 3) break;
       prevCount = count;
-      await page.evaluate(() => (globalThis as any).window.scrollBy(0, 1500));
-      await page.waitForTimeout(800);
+
+      if (scrollContainer) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await scrollContainer.evaluate((el: any) => el.scrollBy(0, 2000));
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await page.evaluate(() => (globalThis as any).window.scrollBy(0, 2000));
+      }
+      await page.waitForTimeout(600);
     }
 
     const html = await page.content();
+
+    // Save debug HTML in case selectors fail
+    const { writeFileSync } = await import('fs');
+    writeFileSync('/tmp/yandex-debug.html', html);
+
     const result = parseYandexMapsHtml(html, orgId);
 
-    // If Playwright got fewer than widget, something went wrong
     if (result.reviews.length === 0) {
-      throw new Error('Playwright got 0 reviews from maps page');
+      throw new Error('Playwright got 0 reviews — check /tmp/yandex-debug.html');
     }
 
     console.log(`[Yandex] Playwright got ${result.reviews.length} reviews for org ${orgId}`);
@@ -109,7 +132,15 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
   const $ = cheerio.load(html);
   const reviews: RawReview[] = [];
 
-  // Yandex Maps uses several possible class naming patterns
+  // Log what we found for debugging
+  const counts = {
+    'business-review-view': $('.business-review-view').length,
+    '[class*=review-view]': $('[class*="review-view"]').length,
+    '[class*=business-review]': $('[class*="business-review"]').length,
+    '[itemprop=review]': $('[itemprop="review"]').length,
+  };
+  console.log('[Yandex] Selector counts:', JSON.stringify(counts));
+
   const reviewEls = $('[class*="business-review-view__review"], .business-review-view, [class*="orgpage-reviews-view__review"]');
 
   reviewEls.each((_, el) => {
