@@ -146,38 +146,22 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
   reviewEls.each((_, el) => {
     const $el = $(el);
 
-    const author = (
-      $el.find('[class*="business-review-view__author"]').first().text().trim() ||
-      $el.find('[class*="review-author"]').first().text().trim() ||
-      'Аноним'
-    );
+    const author = $el.find('.business-review-view__author-name').first().text().trim() || 'Аноним';
 
-    const avatarUrl = (
-      $el.find('[class*="user-pic"] img').first().attr('src') ||
-      $el.find('[class*="avatar"] img').first().attr('src') ||
-      null
-    );
+    const avatarEl = $el.find('.business-review-view__author-image img, .business-review-view__user-icon img').first();
+    const avatarUrl = avatarEl.attr('src') || null;
 
-    const dateStr = (
-      $el.find('[class*="business-review-view__date"]').first().text().trim() ||
-      $el.find('meta[itemprop="datePublished"]').attr('content') ||
-      ''
-    );
+    const dateStr = $el.find('.business-review-view__date').first().text().trim();
 
-    const text = (
-      $el.find('[class*="business-review-view__body-text"]').first().text().trim() ||
-      $el.find('[class*="review-text"]').first().text().trim() ||
-      ''
-    );
+    const text = $el.find('.business-review-view__body').first().text().trim();
 
     if (!text) return;
 
-    // Rating: count filled stars
-    const filledStars = $el.find('[class*="stars__icon_full"], [class*="icon_color_yellow"]').length ||
-      $el.find('[class*="rating__star"]').filter((_, s) => !$(s).hasClass('rating__star_empty')).length;
+    // Count filled stars inside this review's rating block
+    const filledStars = $el.find('.business-review-view__rating ._full').length;
     const rating = filledStars > 0 && filledStars <= 5 ? filledStars : 5;
 
-    const reply = $el.find('[class*="business-review-view__official-answer"]').first().text().trim() || null;
+    const reply = $el.find('.business-review-view__comment-expand').first().text().trim() || null;
 
     const publishedAt = parseRussianDate(dateStr);
     const externalId = crypto
