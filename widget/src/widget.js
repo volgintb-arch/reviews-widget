@@ -71,11 +71,16 @@
     if (!c) return;
     if (c.accent_color) root.style.setProperty('--ql-accent', c.accent_color);
     if (c.star_color) root.style.setProperty('--ql-star', c.star_color);
+    if (c.bg_color) root.style.setProperty('--ql-bg', c.bg_color);
     if (c.card_bg) root.style.setProperty('--ql-card-bg', c.card_bg);
     if (c.text_color) root.style.setProperty('--ql-text', c.text_color);
     if (c.font_family && c.font_family !== 'inherit') {
       root.style.setProperty('--ql-font', c.font_family);
     }
+    const desktop = cardsDesktopOverride || c.cards_visible_desktop || 3;
+    const mobile = cardsMobileOverride || c.cards_visible_mobile || 1;
+    root.style.setProperty('--ql-cards-desktop', String(desktop));
+    root.style.setProperty('--ql-cards-mobile', String(mobile));
   }
 
   function render() {
@@ -97,8 +102,12 @@
 
   function getFilteredReviews() {
     const all = state.data?.reviews || [];
-    if (state.activeSource === 'all') return all;
-    return all.filter((r) => r.source === state.activeSource);
+    const cfg = state.config || {};
+    const minRating = Number(cfg.min_rating) || 1;
+    const minLen = Number(cfg.min_text_length) || 0;
+    const filtered = all.filter((r) => r.rating >= minRating && r.text.length >= minLen);
+    if (state.activeSource === 'all') return filtered;
+    return filtered.filter((r) => r.source === state.activeSource);
   }
 
   function getStats() {
@@ -317,13 +326,13 @@
   }
 
   function iconAll() {
-    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="#8B5CF6" aria-hidden="true"><path d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg>`;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#EC4899);"><svg viewBox="0 0 24 24" width="11" height="11" fill="#fff" aria-hidden="true"><path d="M12 2l2.39 6.95H22l-5.8 4.22L18.18 20 12 15.77 5.82 20l1.98-6.83L2 8.95h7.61z"/></svg></span>`;
   }
   function iconYandex() {
-    return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="10" r="8" fill="#FC3F1D"/><path d="M12 22l-4-6h8z" fill="#FC3F1D"/><text x="12" y="13.5" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Arial, sans-serif">Я</text></svg>`;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#FC3F1D;color:#fff;font:700 11px/1 Arial,sans-serif;">Я</span>`;
   }
   function iconTwogis() {
-    return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#2FAE5F"/><text x="12" y="15.5" text-anchor="middle" fill="#fff" font-size="8" font-weight="800" font-family="Arial, sans-serif">2ГИС</text></svg>`;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:#2FAE5F;color:#fff;font:700 8px/1 Arial,sans-serif;">2ГИС</span>`;
   }
 
   function injectStyles() {
@@ -340,6 +349,7 @@
   --ql-accent-hover: #E0941D;
   --ql-star: #FFC107;
   --ql-star-empty: #E0E0E0;
+  --ql-bg: transparent;
   --ql-card-bg: #FFFFFF;
   --ql-text: #2C2C2C;
   --ql-text-muted: #8A8A8A;
@@ -347,9 +357,12 @@
   --ql-tab-border: #E5E5E5;
   --ql-shadow: 0 4px 18px rgba(0,0,0,0.06);
   --ql-radius: 18px;
+  --ql-cards-desktop: 3;
+  --ql-cards-mobile: 1;
   --ql-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-family: var(--ql-font);
   color: var(--ql-text);
+  background: var(--ql-bg);
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -364,7 +377,7 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 18px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 #${ROOT_ID} .ql-tab {
   background: #FFFFFF;
@@ -416,12 +429,12 @@
 #${ROOT_ID} .ql-carousel__viewport { overflow: hidden; padding: 4px 0 8px; }
 #${ROOT_ID} .ql-carousel__container { display: flex; align-items: stretch; }
 #${ROOT_ID} .ql-slide {
-  flex: 0 0 100%;
+  flex: 0 0 calc(100% / var(--ql-cards-mobile, 1));
   min-width: 0;
   padding: 0 8px;
 }
-@media (min-width: 640px) { #${ROOT_ID} .ql-slide { flex-basis: 50%; } }
-@media (min-width: 1024px) { #${ROOT_ID} .ql-slide { flex-basis: 33.3333%; } }
+@media (min-width: 640px) { #${ROOT_ID} .ql-slide { flex: 0 0 50%; } }
+@media (min-width: 1024px) { #${ROOT_ID} .ql-slide { flex: 0 0 calc(100% / var(--ql-cards-desktop, 3)); } }
 
 /* Card */
 #${ROOT_ID} .ql-card {
@@ -598,7 +611,6 @@
 @media (max-width: 639px) {
   #${ROOT_ID} .ql-tab { padding: 8px 14px; font-size: 13px; }
   #${ROOT_ID} .ql-arrow { width: 36px; height: 36px; }
-  #${ROOT_ID} .ql-summary { justify-content: center; }
 }
 `;
 
