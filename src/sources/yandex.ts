@@ -149,9 +149,6 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
   });
   console.log('[Yandex] Rating/stars classes found:', [...ratingClasses].filter(Boolean).slice(0, 15).join(', '));
 
-  // Log first review's avatar element html for debugging
-  const firstReview = $('[class*="business-review-view__review"], .business-review-view').first();
-  console.log('[Yandex] First review avatar HTML:', firstReview.find('[class*="user-icon"], [class*="author-image"], [class*="avatar"]').html()?.slice(0, 200) ?? 'NOT FOUND');
 
   const reviewEls = $('[class*="business-review-view__review"], .business-review-view, [class*="orgpage-reviews-view__review"]');
 
@@ -160,8 +157,11 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
 
     const author = $el.find('.business-review-view__author-name').first().text().trim() || 'Аноним';
 
-    const avatarEl = $el.find('.business-review-view__author-image img, .business-review-view__user-icon img').first();
-    const avatarUrl = avatarEl.attr('src') || null;
+    // Yandex uses background-image on .user-icon-view__icon, not an <img> tag
+    const iconEl = $el.find('.user-icon-view__icon').first();
+    const bgStyle = iconEl.attr('style') || '';
+    const bgMatch = bgStyle.match(/background-image:\s*url\(["']?(https?[^"')]+)["']?\)/);
+    const avatarUrl = bgMatch ? bgMatch[1] : null;
 
     const dateStr = $el.find('.business-review-view__date').first().text().trim();
 
