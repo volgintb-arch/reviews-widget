@@ -72,7 +72,7 @@ function mapTwoGisReview(r: TwoGisReview, firmId: string): RawReview {
     text: r.text ?? '',
     reply: r.official_answer?.text ?? null,
     publishedAt: r.date_created,
-    reviewUrl: `https://2gis.ru/search/firm/${firmId}/tab/reviews/?reviewId=${r.id}`,
+    reviewUrl: `https://2gis.ru/firm/${firmId}/tab/reviews?reviewId=${r.id}`,
   };
 }
 
