@@ -17,7 +17,7 @@ async function main() {
 
   // Prisma updateMany can't do string replacement — use raw SQL
   const { count } = await prisma.$executeRaw`
-    UPDATE "Review"
+    UPDATE reviews
     SET "reviewUrl" = REPLACE("reviewUrl", '/search/firm/', '/firm/')
     WHERE source = '2gis' AND "reviewUrl" LIKE '%/search/firm/%'
   `;
