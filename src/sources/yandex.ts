@@ -200,7 +200,9 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
   const countText = $('.business-summary-rating-badge-view__rating-count').first().text().trim();
   console.log('[Yandex] Page rating:', ratingText, 'count text:', countText);
 
-  const pageRating = ratingText ? parseFloat(ratingText.replace(',', '.')) : null;
+  // Extract just the decimal rating number (e.g. "4,4") from mixed text like "Рейтинг 4,412 оценок"
+  const ratingNumMatch = ratingText.match(/([1-5][,\.]\d)/);
+  const pageRating = ratingNumMatch ? parseFloat(ratingNumMatch[1].replace(',', '.')) : null;
   const countMatch = countText.match(/\d+/);
   const pageCount = countMatch ? parseInt(countMatch[0], 10) : null;
 
