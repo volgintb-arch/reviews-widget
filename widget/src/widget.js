@@ -332,7 +332,8 @@
     return `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#FC3F1D"/><text x="10" y="14.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="12" fill="#fff">Я</text></svg>`;
   }
   function iconTwogis() {
-    return `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect width="20" height="20" rx="5" fill="#1BA047"/><text x="10" y="10" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" font-weight="900" font-size="6.5" fill="#fff">2ГИС</text></svg>`;
+    // 2GIS logo: green circle with white "2" and dot
+    return `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#1BA047"/><text x="10" y="8.5" text-anchor="middle" dominant-baseline="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="9" fill="#fff">2</text><circle cx="10" cy="15" r="1.5" fill="#fff"/></svg>`;
   }
 
   function injectStyles() {

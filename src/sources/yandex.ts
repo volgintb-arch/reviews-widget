@@ -182,10 +182,20 @@ function parseYandexMapsHtml(html: string, orgId: string): SourceResult {
     });
   });
 
-  const totalCount = reviews.length;
-  const averageRating = totalCount > 0
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalCount
-    : null;
+  // Extract the real overall rating and total count from the page
+  // (Yandex counts all ratings, including those without text)
+  const ratingText = $('.business-rating-badge-view__rating, .orgpage-rating-view__rating, [class*="rating-badge"] [class*="rating__value"]').first().text().trim();
+  const countText = $('.business-rating-badge-view__count, .orgpage-rating-view__count, [class*="rating-badge"] [class*="count"]').first().text().trim();
+  console.log('[Yandex] Page rating:', ratingText, 'count text:', countText);
+
+  const pageRating = ratingText ? parseFloat(ratingText.replace(',', '.')) : null;
+  const countMatch = countText.match(/\d+/);
+  const pageCount = countMatch ? parseInt(countMatch[0], 10) : null;
+
+  const totalCount = pageCount ?? reviews.length;
+  const averageRating = (pageRating && !isNaN(pageRating))
+    ? pageRating
+    : (reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : null);
 
   return { reviews, averageRating, totalCount };
 }
