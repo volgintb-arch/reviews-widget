@@ -629,8 +629,11 @@
 /* Mobile (< 640px) — compact tabs, smaller controls */
 @media (max-width: 639px) {
   #${ROOT_ID} { padding: 0 12px; }
-  #${ROOT_ID} .ql-tab { padding: 8px 14px; font-size: 13px; gap: 6px; }
-  #${ROOT_ID} .ql-tabs { gap: 8px; margin-bottom: 16px; }
+  #${ROOT_ID} .ql-tab { padding: 7px 12px; font-size: 12px; gap: 5px; }
+  #${ROOT_ID} .ql-tabs { gap: 6px; margin-bottom: 16px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #${ROOT_ID} .ql-tabs::-webkit-scrollbar { display: none; }
+  #${ROOT_ID} .ql-tab { flex-shrink: 0; }
+  #${ROOT_ID} .ql-tab__icon svg { width: 14px !important; height: 14px !important; }
   #${ROOT_ID} .ql-summary { gap: 6px; margin-bottom: 18px; }
   #${ROOT_ID} .ql-stars--summary { font-size: 20px; }
   #${ROOT_ID} .ql-card { padding: 16px; gap: 10px; }
@@ -642,10 +645,15 @@
   #${ROOT_ID} .ql-controls { gap: 12px; margin-top: 14px; }
 }
 
-/* Very narrow (< 360px) — iPhone SE, small Androids */
+/* Very narrow (< 480px) — hide tab labels, keep icon + rating only */
+@media (max-width: 479px) {
+  #${ROOT_ID} .ql-tab__label { display: none; }
+  #${ROOT_ID} .ql-tab { padding: 7px 11px; gap: 4px; }
+}
+
+/* iPhone SE / small Androids (< 360px) */
 @media (max-width: 359px) {
   #${ROOT_ID} { padding: 0 8px; }
-  #${ROOT_ID} .ql-tab { padding: 7px 12px; font-size: 12px; }
   #${ROOT_ID} .ql-card { padding: 14px; }
   #${ROOT_ID} .ql-card__avatar { width: 40px; height: 40px; font-size: 15px; }
   #${ROOT_ID} .ql-summary__rating { font-size: 18px; }
