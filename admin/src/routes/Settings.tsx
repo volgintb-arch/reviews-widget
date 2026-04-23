@@ -15,6 +15,7 @@ const SETTING_KEYS = [
   'widget.card_bg', 'widget.text_color', 'widget.font_family',
   'widget.min_rating', 'widget.min_text_length',
   'widget.cards_visible_desktop', 'widget.cards_visible_mobile',
+  'widget.card_radius', 'widget.tab_radius',
 ] as const;
 
 type SettingKey = typeof SETTING_KEYS[number];
@@ -133,6 +134,31 @@ export default function Settings() {
               <Label>Шрифт</Label>
               <Input value={values['widget.font_family'] ?? ''} onChange={(e) => set('widget.font_family', e.target.value)} />
               <p className="text-xs text-muted-foreground">Если оставить inherit — подхватит шрифт страницы Tilda.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Скругление карточек (px)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="60"
+                  value={values['widget.card_radius'] ?? '18'}
+                  onChange={(e) => set('widget.card_radius', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">0 — прямые углы, 18 — по умолчанию.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Скругление табов (px)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={values['widget.tab_radius'] ?? '999'}
+                  onChange={(e) => set('widget.tab_radius', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">999 — капсула (pill), 8 — скруглённый прямоугольник.</p>
+              </div>
             </div>
           </CardContent>
         </Card>

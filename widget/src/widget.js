@@ -77,10 +77,22 @@
     if (c.font_family && c.font_family !== 'inherit') {
       root.style.setProperty('--ql-font', c.font_family);
     }
+    if (c.card_radius !== undefined && c.card_radius !== '') {
+      root.style.setProperty('--ql-radius', normalizeRadius(c.card_radius));
+    }
+    if (c.tab_radius !== undefined && c.tab_radius !== '') {
+      root.style.setProperty('--ql-tab-radius', normalizeRadius(c.tab_radius));
+    }
     const desktop = cardsDesktopOverride || c.cards_visible_desktop || 3;
     const mobile = cardsMobileOverride || c.cards_visible_mobile || 1;
     root.style.setProperty('--ql-cards-desktop', String(desktop));
     root.style.setProperty('--ql-cards-mobile', String(mobile));
+  }
+
+  function normalizeRadius(v) {
+    const s = String(v).trim();
+    if (/^\d+$/.test(s)) return s + 'px';
+    return s;
   }
 
   function render() {
@@ -360,6 +372,7 @@
   --ql-tab-border: #E5E5E5;
   --ql-shadow: 0 4px 18px rgba(0,0,0,0.06);
   --ql-radius: 18px;
+  --ql-tab-radius: 999px;
   --ql-cards-desktop: 3;
   --ql-cards-mobile: 1;
   --ql-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -386,7 +399,7 @@
   background: #FFFFFF;
   border: 1.5px solid var(--ql-tab-border);
   color: #3A3A3A;
-  border-radius: 999px;
+  border-radius: var(--ql-tab-radius);
   padding: 9px 18px;
   font: 600 14px/1.2 var(--ql-font);
   cursor: pointer;
