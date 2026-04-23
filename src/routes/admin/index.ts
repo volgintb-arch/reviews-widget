@@ -4,6 +4,7 @@ import { citiesRoute } from './cities.js';
 import { reviewsAdminRoute } from './reviews.js';
 import { settingsRoute } from './settings.js';
 import { refreshRoute } from './refresh.js';
+import { alertsRoute } from './alerts.js';
 
 export async function registerAdminRoutes(app: FastifyInstance) {
   // Login — no auth required
@@ -16,5 +17,6 @@ export async function registerAdminRoutes(app: FastifyInstance) {
     await admin.register(reviewsAdminRoute);
     await admin.register(settingsRoute);
     await admin.register(refreshRoute);
+    await admin.register(alertsRoute);
   });
 }

@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { notify } from '../lib/notifier.js';
+import { createAlert } from '../lib/alerts.js';
 
 const STALE_DAYS = 60;
 const HEALTHY_LAST_SUCCESS_DAYS = 7;
@@ -40,10 +40,20 @@ export async function cleanupStaleReviews(): Promise<number> {
   console.log(`[Retention] total deleted: ${totalDeleted}`);
 
   if (totalDeleted >= 50) {
-    await notify(
-      `🧹 <b>Retention cleanup</b>\nDeleted ${totalDeleted} stale reviews (not seen &gt; ${STALE_DAYS}d).`,
-      { key: 'retention:large-cleanup', dedupeMs: 24 * 3600_000 },
-    );
+    await createAlert({
+      level: 'info',
+      title: `Удалено много старых отзывов (${totalDeleted} шт.)`,
+      message:
+        `В ходе ежедневной чистки удалено ${totalDeleted} отзывов, которые не появлялись на сайте источника больше ${STALE_DAYS} дней.\n\n` +
+        `Обычно удаляются 0-10 отзывов за раз. Если сразу ушло много — возможно, источник массово скрыл или удалил часть отзывов. ` +
+        `Это нормально, но стоит проверить:\n` +
+        `• Не падал ли скрапер в последнюю неделю (откройте список городов).\n` +
+        `• Не изменилась ли структура сайта (откройте страницу города в 2ГИС/Яндексе).\n\n` +
+        `Если всё выглядит штатно — просто пометьте этот алерт как прочитанный.`,
+      dedupeKey: 'retention:large-cleanup',
+      dedupeMs: 24 * 3600_000,
+      context: { deleted: totalDeleted },
+    });
   }
 
   return totalDeleted;

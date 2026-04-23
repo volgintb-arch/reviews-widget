@@ -70,3 +70,18 @@ model Setting {
 
   @@map("settings")
 }
+
+model Alert {
+  id             Int       @id @default(autoincrement())
+  level          String    // 'info' | 'warning' | 'error'
+  title          String
+  message        String    @db.Text
+  dedupeKey      String    @map("dedupe_key")
+  context        Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+
+  @@index([acknowledgedAt, createdAt(sort: Desc)])
+  @@index([dedupeKey])
+  @@map("alerts")
+}

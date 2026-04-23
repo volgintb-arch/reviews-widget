@@ -1,18 +1,27 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MapPin, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, MapPin, MessageSquare, Settings, LogOut, Bell } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { clearToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { getUnreadCount } from '@/api/alerts';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/cities', icon: MapPin, label: 'Города' },
   { to: '/reviews', icon: MessageSquare, label: 'Отзывы' },
+  { to: '/alerts', icon: Bell, label: 'Алерты', badgeKey: 'alerts' as const },
   { to: '/settings', icon: Settings, label: 'Настройки' },
 ];
 
 export function Layout() {
   const navigate = useNavigate();
+
+  const { data: unreadAlerts = 0 } = useQuery({
+    queryKey: ['alerts-unread-count'],
+    queryFn: getUnreadCount,
+    refetchInterval: 60_000,
+  });
 
   function handleLogout() {
     clearToken();
@@ -24,7 +33,7 @@ export function Layout() {
       <aside className="hidden w-56 shrink-0 border-r bg-muted/30 md:block">
         <div className="flex h-14 items-center border-b px-4 font-semibold">Reviews Admin</div>
         <nav className="flex flex-col gap-1 p-2">
-          {navItems.map(({ to, icon: Icon, label, end }) => (
+          {navItems.map(({ to, icon: Icon, label, end, badgeKey }) => (
             <NavLink
               key={to}
               to={to}
@@ -37,7 +46,12 @@ export function Layout() {
               }
             >
               <Icon className="h-4 w-4" />
-              {label}
+              <span className="flex-1">{label}</span>
+              {badgeKey === 'alerts' && unreadAlerts > 0 && (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-semibold text-white">
+                  {unreadAlerts > 99 ? '99+' : unreadAlerts}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
