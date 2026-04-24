@@ -5,6 +5,7 @@ import { reviewsAdminRoute } from './reviews.js';
 import { settingsRoute } from './settings.js';
 import { refreshRoute } from './refresh.js';
 import { alertsRoute } from './alerts.js';
+import { projectsRoute } from './projects.js';
 
 export async function registerAdminRoutes(app: FastifyInstance) {
   // Login — no auth required
@@ -13,6 +14,7 @@ export async function registerAdminRoutes(app: FastifyInstance) {
   // All other admin routes require JWT
   await app.register(async function adminRoutes(admin) {
     admin.addHook('onRequest', app.authenticate);
+    await admin.register(projectsRoute);
     await admin.register(citiesRoute);
     await admin.register(reviewsAdminRoute);
     await admin.register(settingsRoute);

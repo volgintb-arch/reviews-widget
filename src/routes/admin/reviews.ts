@@ -20,7 +20,7 @@ export async function reviewsAdminRoute(app: FastifyInstance) {
     const where: Record<string, unknown> = {};
 
     if (city) {
-      const cityData = await prisma.city.findUnique({ where: { slug: city } });
+      const cityData = await prisma.city.findFirst({ where: { slug: city } });
       if (cityData) where.cityId = cityData.id;
     }
 

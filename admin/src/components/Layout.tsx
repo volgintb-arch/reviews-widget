@@ -1,13 +1,16 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MapPin, MessageSquare, Settings, LogOut, Bell } from 'lucide-react';
+import { LayoutDashboard, MapPin, MessageSquare, Settings, LogOut, Bell, FolderOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { clearToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { getUnreadCount } from '@/api/alerts';
+import { useProjectContext } from '@/lib/project-context';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/projects', icon: FolderOpen, label: 'Проекты' },
   { to: '/cities', icon: MapPin, label: 'Города' },
   { to: '/reviews', icon: MessageSquare, label: 'Отзывы' },
   { to: '/alerts', icon: Bell, label: 'Алерты', badgeKey: 'alerts' as const },
@@ -16,6 +19,7 @@ const navItems = [
 
 export function Layout() {
   const navigate = useNavigate();
+  const { projects, currentSlug, setCurrentSlug } = useProjectContext();
 
   const { data: unreadAlerts = 0 } = useQuery({
     queryKey: ['alerts-unread-count'],
@@ -32,6 +36,17 @@ export function Layout() {
     <div className="flex h-screen">
       <aside className="hidden w-56 shrink-0 border-r bg-muted/30 md:block">
         <div className="flex h-14 items-center border-b px-4 font-semibold">Reviews Admin</div>
+        <div className="border-b p-3">
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">Проект</label>
+          <Select value={currentSlug} onValueChange={setCurrentSlug}>
+            <SelectTrigger className="h-9"><SelectValue placeholder="Выберите проект" /></SelectTrigger>
+            <SelectContent>
+              {projects.map((p) => (
+                <SelectItem key={p.slug} value={p.slug}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <nav className="flex flex-col gap-1 p-2">
           {navItems.map(({ to, icon: Icon, label, end, badgeKey }) => (
             <NavLink

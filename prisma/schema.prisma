@@ -7,20 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model City {
-  id            Int      @id @default(autoincrement())
-  slug          String   @unique
-  name          String
-  twogisFirmId  String?  @map("twogis_firm_id")
-  yandexOrgId   String?  @map("yandex_org_id")
-  siteUrl       String?  @map("site_url")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+model Project {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
+  cities   City[]
+  settings ProjectSetting[]
+
+  @@map("projects")
+}
+
+model ProjectSetting {
+  projectId Int     @map("project_id")
+  key       String
+  value     String  @db.Text
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, key])
+  @@map("project_settings")
+}
+
+model City {
+  id             Int      @id @default(autoincrement())
+  projectId      Int      @default(1) @map("project_id")
+  slug           String
+  name           String
+  twogisFirmId   String?  @map("twogis_firm_id")
+  yandexOrgId    String?  @map("yandex_org_id")
+  siteUrl        String?  @map("site_url")
+  isActive       Boolean  @default(true) @map("is_active")
+  configOverride Json?    @map("config_override")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  project  Project        @relation(fields: [projectId], references: [id], onDelete: Restrict)
   reviews  Review[]
   statuses SourceStatus[]
 
+  @@unique([projectId, slug])
+  @@index([slug])
   @@map("cities")
 }
 

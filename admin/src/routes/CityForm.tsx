@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { getCity, createCity, updateCity, refreshCity } from '@/api/cities';
+import { useProjectContext } from '@/lib/project-context';
 
 const citySchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/, 'Только латиница, цифры, дефис').min(2).max(20),
@@ -30,11 +31,14 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { currentSlug, current } = useProjectContext();
   const [copied, setCopied] = useState(false);
+  const [overrideJson, setOverrideJson] = useState<string>('');
+  const [overrideError, setOverrideError] = useState<string | null>(null);
 
   const { data: city, isLoading } = useQuery({
-    queryKey: ['city', slug],
-    queryFn: () => getCity(slug!),
+    queryKey: ['city', currentSlug, slug],
+    queryFn: () => getCity(slug!, currentSlug),
     enabled: mode === 'edit' && !!slug,
   });
 
@@ -55,19 +59,34 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
         yandex_org_id: city.yandex_org_id ?? '',
         is_active: city.is_active,
       });
+      setOverrideJson(city.config_override ? JSON.stringify(city.config_override, null, 2) : '');
     }
   }, [city, reset]);
 
   const saveMut = useMutation({
     mutationFn: async (data: FormData) => {
-      const body = {
+      let configOverride: Record<string, unknown> | null = null;
+      if (overrideJson.trim()) {
+        try {
+          configOverride = JSON.parse(overrideJson);
+          setOverrideError(null);
+        } catch (err) {
+          setOverrideError('Невалидный JSON');
+          throw new Error('invalid json');
+        }
+      }
+      const body: Record<string, unknown> = {
         ...data,
         site_url: data.site_url || null,
         twogis_firm_id: data.twogis_firm_id || null,
         yandex_org_id: data.yandex_org_id || null,
       };
-      if (mode === 'create') return createCity(body);
-      return updateCity(slug!, body);
+      if (mode === 'create') {
+        body.project_slug = currentSlug;
+        return createCity(body);
+      }
+      body.config_override = configOverride;
+      return updateCity(slug!, body, currentSlug);
     },
     onSuccess: async (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['cities'] });
@@ -96,6 +115,7 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
       <Card>
         <CardHeader>
           <CardTitle>{mode === 'create' ? 'Новый город' : `Редактирование: ${city?.name}`}</CardTitle>
+          {current && <p className="text-sm text-muted-foreground">Проект: {current.name}</p>}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit((d) => saveMut.mutate(d))} className="space-y-6">
@@ -156,6 +176,33 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
         </CardContent>
       </Card>
 
+      {mode === 'edit' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Переопределение настроек для этого города</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              JSON с полями, которые нужно переопределить поверх настроек проекта. Ключи — как в настройках без префикса <code>widget.</code>.
+              Пусто = использовать настройки проекта.
+            </p>
+            <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
+{`{
+  "accent_color": "#FF5722",
+  "card_radius": 8
+}`}
+            </pre>
+            <textarea
+              className="w-full min-h-[120px] rounded-md border bg-background p-3 font-mono text-sm"
+              value={overrideJson}
+              onChange={(e) => setOverrideJson(e.target.value)}
+              placeholder="{}"
+            />
+            {overrideError && <p className="text-sm text-destructive">{overrideError}</p>}
+          </CardContent>
+        </Card>
+      )}
+
       {mode === 'edit' && city && (
         <Card>
           <CardHeader>
@@ -166,14 +213,14 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
               Вставьте этот код в блок <span className="font-mono">T123</span> (HTML-код) на странице города в Tilda.
             </p>
             <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
-              <code>{getSnippet(city.slug)}</code>
+              <code>{getSnippet(city.slug, currentSlug)}</code>
             </pre>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText(getSnippet(city.slug));
+                navigator.clipboard.writeText(getSnippet(city.slug, currentSlug));
                 setCopied(true);
                 toast({ title: 'Скопировано' });
                 setTimeout(() => setCopied(false), 2000);
@@ -189,7 +236,8 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
   );
 }
 
-function getSnippet(slug: string): string {
-  return `<div id="ql-reviews" data-city="${slug}"></div>
+function getSnippet(citySlug: string, projectSlug: string): string {
+  const projectAttr = projectSlug && projectSlug !== 'reviews' ? ` data-project="${projectSlug}"` : '';
+  return `<div id="ql-reviews" data-city="${citySlug}"${projectAttr}></div>
 <script src="https://reviews.questlegends.ru/widget/widget.js" defer></script>`;
 }

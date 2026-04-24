@@ -55,7 +55,8 @@ export async function refreshAll() {
 }
 
 export async function refreshCity(slug: string) {
-  const city = await prisma.city.findUniqueOrThrow({ where: { slug } });
+  const city = await prisma.city.findFirst({ where: { slug } });
+  if (!city) throw new Error(`City "${slug}" not found`);
   const tasks = [];
   if (city.twogisFirmId) {
     tasks.push(refreshSource('2gis', city.id, city.twogisFirmId, null));

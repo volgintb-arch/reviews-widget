@@ -26,7 +26,7 @@ export default function Reviews() {
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const { data: cities } = useQuery({ queryKey: ['cities'], queryFn: listCities, staleTime: 60_000 });
+  const { data: cities } = useQuery({ queryKey: ['cities'], queryFn: () => listCities(), staleTime: 60_000 });
 
   const { data, isLoading } = useQuery({
     queryKey: ['reviews', city, source, showHidden, page],

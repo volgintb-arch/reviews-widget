@@ -10,27 +10,37 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { listCities, deleteCity, updateCity, type City } from '@/api/cities';
+import { useProjectContext } from '@/lib/project-context';
 
 export default function Cities() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: cities, isLoading } = useQuery({ queryKey: ['cities'], queryFn: listCities, staleTime: 30_000 });
+  const { currentSlug, current } = useProjectContext();
+  const { data: cities, isLoading } = useQuery({
+    queryKey: ['cities', currentSlug],
+    queryFn: () => listCities(currentSlug),
+    staleTime: 30_000,
+    enabled: !!currentSlug,
+  });
 
   const deleteMut = useMutation({
-    mutationFn: (slug: string) => deleteCity(slug),
+    mutationFn: (slug: string) => deleteCity(slug, currentSlug),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cities'] }); toast({ title: 'Город удалён' }); },
     onError: () => toast({ title: 'Ошибка удаления', variant: 'destructive' }),
   });
 
   const toggleMut = useMutation({
-    mutationFn: ({ slug, is_active }: { slug: string; is_active: boolean }) => updateCity(slug, { is_active }),
+    mutationFn: ({ slug, is_active }: { slug: string; is_active: boolean }) => updateCity(slug, { is_active }, currentSlug),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cities'] }),
   });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Города</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Города</h2>
+          {current && <p className="text-sm text-muted-foreground">Проект: {current.name}</p>}
+        </div>
         <Button asChild>
           <Link to="/cities/new"><Plus className="mr-2 h-4 w-4" />Добавить город</Link>
         </Button>

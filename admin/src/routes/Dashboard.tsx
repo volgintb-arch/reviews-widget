@@ -11,7 +11,7 @@ import { formatRelative, pluralize } from '@/lib/format';
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: cities, isLoading } = useQuery({ queryKey: ['cities'], queryFn: listCities, staleTime: 30_000 });
+  const { data: cities, isLoading } = useQuery({ queryKey: ['cities'], queryFn: () => listCities(), staleTime: 30_000 });
 
   const refreshMut = useMutation({
     mutationFn: (slug: string) => refreshCity(slug),

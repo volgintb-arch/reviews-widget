@@ -8,6 +8,7 @@ import CityForm from '@/routes/CityForm';
 import Reviews from '@/routes/Reviews';
 import Settings from '@/routes/Settings';
 import Alerts from '@/routes/Alerts';
+import Projects from '@/routes/Projects';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="projects" element={<Projects />} />
         <Route path="cities" element={<Cities />} />
         <Route path="cities/new" element={<CityForm mode="create" />} />
         <Route path="cities/:slug/edit" element={<CityForm mode="edit" />} />

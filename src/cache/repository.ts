@@ -108,7 +108,7 @@ export async function getPublicReviews(query: ReviewsQuery): Promise<ReviewsResu
   const cached = memoryCache.get<ReviewsResult>(cacheKey);
   if (cached) return cached;
 
-  const city = await prisma.city.findUnique({ where: { slug: query.citySlug } });
+  const city = await prisma.city.findFirst({ where: { slug: query.citySlug } });
   if (!city) {
     return { reviews: [], stats: { total: 0, average: 0, by_source: {} }, updated_at: null };
   }

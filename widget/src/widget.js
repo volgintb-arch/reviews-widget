@@ -18,6 +18,7 @@
     console.error('[ql-reviews] data-city attribute is required');
     return;
   }
+  const project = root.dataset.project || 'reviews';
   const apiBase = (root.dataset.api || '__API_BASE__').replace(/\/$/, '');
   const cardsDesktopOverride = parseInt(root.dataset.cardsDesktop, 10);
   const cardsMobileOverride = parseInt(root.dataset.cardsMobile, 10);
@@ -33,7 +34,7 @@
   async function init() {
     try {
       const [configRes, dataRes] = await Promise.all([
-        fetch(`${apiBase}/api/widget/config?city=${encodeURIComponent(city)}`),
+        fetch(`${apiBase}/api/widget/config?project=${encodeURIComponent(project)}&city=${encodeURIComponent(city)}`),
         fetch(`${apiBase}/api/reviews?city=${encodeURIComponent(city)}`),
       ]);
       if (!configRes.ok) throw new Error(`config HTTP ${configRes.status}`);
