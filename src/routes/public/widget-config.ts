@@ -19,16 +19,35 @@ export async function widgetConfigRoute(app: FastifyInstance) {
       return cached;
     }
 
-    const projectRow = await prisma.project.findUnique({ where: { slug: projectSlug } });
-    if (!projectRow) {
-      return reply.status(404).send({ error: 'Project not found' });
+    let projectRow = await prisma.project.findUnique({ where: { slug: projectSlug } });
+    let cityData = projectRow
+      ? await prisma.city.findUnique({
+          where: { projectId_slug: { projectId: projectRow.id, slug: city } },
+        })
+      : null;
+
+    // Fallback: if the city was not found in the given project (or the given
+    // project doesn't exist), try to resolve the city unambiguously across all
+    // projects — so legacy embeds without data-project keep working.
+    if (!cityData) {
+      const candidates = await prisma.city.findMany({
+        where: { slug: city },
+        include: { project: true },
+      });
+      if (candidates.length === 1) {
+        cityData = candidates[0];
+        projectRow = candidates[0].project;
+      } else if (candidates.length === 0) {
+        return reply.status(404).send({ error: 'City not found' });
+      } else {
+        return reply.status(409).send({
+          error: 'City slug exists in multiple projects — specify data-project',
+        });
+      }
     }
 
-    const cityData = await prisma.city.findUnique({
-      where: { projectId_slug: { projectId: projectRow.id, slug: city } },
-    });
-    if (!cityData) {
-      return reply.status(404).send({ error: 'City not found' });
+    if (!projectRow) {
+      return reply.status(404).send({ error: 'Project not found' });
     }
 
     const settings = await prisma.projectSetting.findMany({

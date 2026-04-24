@@ -37,8 +37,14 @@
         fetch(`${apiBase}/api/widget/config?project=${encodeURIComponent(project)}&city=${encodeURIComponent(city)}`),
         fetch(`${apiBase}/api/reviews?city=${encodeURIComponent(city)}`),
       ]);
-      if (!configRes.ok) throw new Error(`config HTTP ${configRes.status}`);
-      if (!dataRes.ok) throw new Error(`reviews HTTP ${dataRes.status}`);
+      if (!configRes.ok) {
+        const body = await configRes.text().catch(() => '');
+        throw new Error(`config ${configRes.status}: ${body.slice(0, 200)}`);
+      }
+      if (!dataRes.ok) {
+        const body = await dataRes.text().catch(() => '');
+        throw new Error(`reviews ${dataRes.status}: ${body.slice(0, 200)}`);
+      }
       state.config = await configRes.json();
       state.data = await dataRes.json();
       applyTokens(state.config);
