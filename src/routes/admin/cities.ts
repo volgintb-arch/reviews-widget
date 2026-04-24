@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../lib/prisma.js';
 import { z } from 'zod';
+import { invalidateCityOriginsCache } from '../../plugins/cors.js';
 
 const nullableUrl = z.preprocess(
   (v) => (v === '' || v === null ? undefined : v),
@@ -119,6 +120,7 @@ export async function citiesRoute(app: FastifyInstance) {
       },
       include: { project: true, statuses: true, _count: { select: { reviews: true } } },
     });
+    invalidateCityOriginsCache();
     return reply.status(201).send(formatCity(city));
   });
 
@@ -152,6 +154,7 @@ export async function citiesRoute(app: FastifyInstance) {
       data,
       include: { project: true, statuses: true, _count: { select: { reviews: true } } },
     });
+    invalidateCityOriginsCache();
     return formatCity(updated);
   });
 
