@@ -2,21 +2,30 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../lib/prisma.js';
 import { z } from 'zod';
 
+const nullableUrl = z.preprocess(
+  (v) => (v === '' || v === null ? undefined : v),
+  z.string().url().optional(),
+);
+const nullableString = z.preprocess(
+  (v) => (v === '' || v === null ? undefined : v),
+  z.string().optional(),
+);
+
 const cityCreateSchema = z.object({
   project_slug: z.string().min(1).default('reviews'),
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(32),
   name: z.string().min(1).max(50),
-  site_url: z.string().url().optional().or(z.literal('')),
-  twogis_firm_id: z.string().optional().or(z.literal('')),
-  yandex_org_id: z.string().optional().or(z.literal('')),
+  site_url: nullableUrl,
+  twogis_firm_id: nullableString,
+  yandex_org_id: nullableString,
   is_active: z.boolean().default(true),
 });
 
 const cityUpdateSchema = z.object({
   name: z.string().min(1).max(50).optional(),
-  site_url: z.string().url().optional().or(z.literal('')),
-  twogis_firm_id: z.string().optional().or(z.literal('')),
-  yandex_org_id: z.string().optional().or(z.literal('')),
+  site_url: nullableUrl,
+  twogis_firm_id: nullableString,
+  yandex_org_id: nullableString,
   is_active: z.boolean().optional(),
   config_override: z.record(z.string(), z.unknown()).nullable().optional(),
 });

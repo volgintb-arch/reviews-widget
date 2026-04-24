@@ -99,7 +99,15 @@ export default function CityForm({ mode }: { mode: 'create' | 'edit' }) {
       }
       navigate('/cities');
     },
-    onError: () => toast({ title: 'Ошибка сохранения', variant: 'destructive' }),
+    onError: (err: any) => {
+      const serverErr = err?.response?.data?.error;
+      const detail = typeof serverErr === 'string'
+        ? serverErr
+        : serverErr
+          ? JSON.stringify(serverErr)
+          : err?.message ?? 'Unknown error';
+      toast({ title: 'Ошибка сохранения', description: detail, variant: 'destructive' });
+    },
   });
 
   if (mode === 'edit' && isLoading) {
