@@ -31,20 +31,19 @@ async function loadCityOrigins(): Promise<Set<string>> {
 
 export async function registerCors(app: FastifyInstance) {
   await app.register(cors, {
-    origin: async (origin, cb) => {
+    // Promise-style origin check. @fastify/cors detects arity === 1 and awaits
+    // the returned boolean; mixing callback style with async causes
+    // "Invalid CORS origin option" errors.
+    origin: async (origin) => {
       // Same-origin requests (no Origin header) and server-to-server
-      if (!origin) return cb(null, true);
+      if (!origin) return true;
 
-      // Our own domain — admin SPA loads its own assets with crossorigin
-      if (origin === config.PUBLIC_API_BASE) return cb(null, true);
+      if (origin === config.PUBLIC_API_BASE) return true;
+      if (config.ALLOWED_ORIGINS.includes(origin)) return true;
 
-      // Static whitelist from .env
-      if (config.ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-
-      // Auto-allow any origin registered as a City.site_url
       try {
         const cityOrigins = await loadCityOrigins();
-        if (cityOrigins.has(origin)) return cb(null, true);
+        if (cityOrigins.has(origin)) return true;
       } catch (err) {
         app.log.error({ err }, 'Failed to load city origins for CORS');
       }
@@ -53,9 +52,9 @@ export async function registerCors(app: FastifyInstance) {
         origin.startsWith('http://localhost') ||
         origin.startsWith('http://127.0.0.1')
       )) {
-        return cb(null, true);
+        return true;
       }
-      cb(new Error('Not allowed by CORS'), false);
+      return false;
     },
     credentials: true,
   });
