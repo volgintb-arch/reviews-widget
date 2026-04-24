@@ -91,30 +91,41 @@ async function main() {
     END $$;
   `);
 
-  // Step 9: drop old unique on slug, add composite unique (project_id, slug)
-  await prisma.$executeRawUnsafe(`
-    DO $$
-    BEGIN
-      IF EXISTS (
-        SELECT 1 FROM pg_indexes
-        WHERE indexname = 'cities_slug_key' AND tablename = 'cities'
-      ) THEN
-        ALTER TABLE cities DROP CONSTRAINT cities_slug_key;
-      END IF;
-    END $$;
-  `);
-  await prisma.$executeRawUnsafe(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes
-        WHERE indexname = 'cities_project_id_slug_key' AND tablename = 'cities'
-      ) THEN
-        ALTER TABLE cities
-          ADD CONSTRAINT cities_project_id_slug_key UNIQUE (project_id, slug);
-      END IF;
-    END $$;
-  `);
+  // Step 9: drop any old standalone unique on cities.slug, add composite unique.
+  // Constraint names vary across Prisma generations, so we look it up by columns.
+  try {
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      DECLARE
+        con_name TEXT;
+      BEGIN
+        -- Find any unique constraint on cities(slug) alone, whatever it's named
+        SELECT tc.constraint_name INTO con_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.constraint_column_usage ccu USING (constraint_name)
+        WHERE tc.table_name = 'cities'
+          AND tc.constraint_type = 'UNIQUE'
+          AND ccu.column_name = 'slug'
+        GROUP BY tc.constraint_name
+        HAVING COUNT(*) = 1
+        LIMIT 1;
+
+        IF con_name IS NOT NULL THEN
+          EXECUTE format('ALTER TABLE cities DROP CONSTRAINT %I', con_name);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE table_name = 'cities' AND constraint_name = 'cities_project_id_slug_key'
+        ) THEN
+          ALTER TABLE cities
+            ADD CONSTRAINT cities_project_id_slug_key UNIQUE (project_id, slug);
+        END IF;
+      END $$;
+    `);
+  } catch (err) {
+    console.warn('[bootstrap] step 9 skipped (will be handled by prisma db push):', err);
+  }
 
   console.log('[bootstrap] done');
   console.log('[bootstrap] next step: run `npx prisma db push` to sync any remaining changes');
