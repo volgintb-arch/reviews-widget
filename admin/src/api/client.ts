@@ -14,7 +14,9 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       clearToken();
-      window.location.href = '/admin/login';
+      if (!window.location.pathname.endsWith('/login')) {
+        window.location.href = '/admin/login';
+      }
     }
     return Promise.reject(err);
   }

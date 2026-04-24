@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listProjects, type Project } from '@/api/projects';
+import { getToken } from '@/lib/auth';
 
 interface ProjectContextValue {
   projects: Project[];
@@ -20,6 +21,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     queryKey: ['projects'],
     queryFn: listProjects,
     staleTime: 30_000,
+    enabled: !!getToken(),
   });
 
   const [currentSlug, setCurrentSlugState] = useState<string>(() => {
